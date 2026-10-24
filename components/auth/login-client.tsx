@@ -6,6 +6,7 @@ import { LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
+import { LanguageToggle } from "@/components/portal/language-toggle";
 import { useI18n } from "@/lib/i18n/locale-provider";
 
 type TenantOption = { id: string; name: string };
@@ -67,6 +68,9 @@ export function LoginClient() {
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center p-4">
+      <div className="mb-2 flex justify-end print:hidden">
+        <LanguageToggle />
+      </div>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">

@@ -1,4 +1,6 @@
 import { BottomNav } from "@/components/portal/bottom-nav";
+import { LanguageToggle } from "@/components/portal/language-toggle";
+import { PortalName } from "@/components/portal/portal-name";
 import { TenantLockedNotice } from "@/components/portal/tenant-locked-notice";
 import { MobileTopBar } from "@/components/portal/mobile-top-bar";
 import { Sidebar } from "@/components/portal/sidebar";
@@ -10,8 +12,9 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
       <TenantLockedNotice />
       <MobileTopBar />
       <header className="hidden shrink-0 print:hidden md:block md:w-56">
-        <div className="px-3 pb-2 pt-1">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Teacher Portal</p>
+        <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-1">
+          <PortalName />
+          <LanguageToggle />
         </div>
         <Sidebar />
       </header>

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Bell, UserRound, UsersRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { LanguageToggle } from "@/components/portal/language-toggle";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { listMyNotifications } from "@/lib/api/teachers";
 
@@ -95,17 +96,20 @@ export function MobileTopBar() {
         <p className="hidden text-xs font-medium uppercase tracking-wider text-primary-foreground/80 min-[360px]:block">
           {t("portal.headerName")}
         </p>
-        <Link
-          href="/profile"
-          aria-current={profileActive ? "page" : undefined}
-          aria-label={t("nav.profileLabel")}
-          className={cn(
-            "inline-flex size-10 items-center justify-center rounded-lg hover:bg-white/10",
-            profileActive ? "text-primary-foreground" : "text-primary-foreground/70 hover:text-primary-foreground",
-          )}
-        >
-          <UserRound size={20} aria-hidden />
-        </Link>
+        <div className="-mr-2 flex items-center">
+          <LanguageToggle />
+          <Link
+            href="/profile"
+            aria-current={profileActive ? "page" : undefined}
+            aria-label={t("nav.profileLabel")}
+            className={cn(
+              "inline-flex size-10 items-center justify-center rounded-lg hover:bg-white/10",
+              profileActive ? "text-primary-foreground" : "text-primary-foreground/70 hover:text-primary-foreground",
+            )}
+          >
+            <UserRound size={20} aria-hidden />
+          </Link>
+        </div>
       </div>
     </div>
   );
