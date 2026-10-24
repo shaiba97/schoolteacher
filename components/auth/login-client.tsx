@@ -6,11 +6,13 @@ import { LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input, Label } from "@/components/ui/input";
+import { useI18n } from "@/lib/i18n/locale-provider";
 
 type TenantOption = { id: string; name: string };
 
 export function LoginClient() {
   const router = useRouter();
+  const { t } = useI18n();
   const [identifier, setIdentifier] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [tenants, setTenants] = React.useState<TenantOption[]>([]);
@@ -41,14 +43,14 @@ export function LoginClient() {
         setError(
           typeof data === "object" && data && "message" in data
             ? String((data as { message: unknown }).message)
-            : "Sign in failed",
+            : t("login.failed"),
         );
         return;
       }
       router.push("/dashboard");
       router.refresh();
     } catch {
-      setError("Teacher portal is unavailable — try again");
+      setError(t("login.unavailable"));
     } finally {
       setPending(false);
     }
@@ -57,7 +59,7 @@ export function LoginClient() {
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!identifier.trim() || !password) {
-      setError("Employee ID and password are required.");
+      setError(t("login.required"));
       return;
     }
     void submit(tenantId || undefined);
@@ -69,24 +71,24 @@ export function LoginClient() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <LogIn size={16} className="text-muted-foreground" aria-hidden />
-            Teacher sign in
+            {t("login.title")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-1.5">
-                    <Label htmlFor="login-employee-id">Employee ID</Label>
+                    <Label htmlFor="login-employee-id">{t("login.employeeId")}</Label>
                     <Input
                       id="login-employee-id"
                       value={identifier}
                       onChange={(event) => setIdentifier(event.target.value)}
-                      placeholder="26CPM001"
+                      placeholder={t("login.employeeIdPlaceholder")}
                 autoComplete="username"
                 required
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="login-password">Password</Label>
+              <Label htmlFor="login-password">{t("login.password")}</Label>
               <Input
                 id="login-password"
                 type="password"
@@ -98,7 +100,7 @@ export function LoginClient() {
             </div>
             {tenants.length > 0 && (
               <div className="space-y-1.5">
-                <Label htmlFor="login-tenant">School</Label>
+                <Label htmlFor="login-tenant">{t("login.school")}</Label>
                 <select
                   id="login-tenant"
                   value={tenantId}
@@ -106,7 +108,7 @@ export function LoginClient() {
                   className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-sm"
                   required
                 >
-                  <option value="">Select your school…</option>
+                  <option value="">{t("login.selectSchool")}</option>
                   {tenants.map((tenant) => (
                     <option key={tenant.id} value={tenant.id}>
                       {tenant.name}
@@ -125,10 +127,10 @@ export function LoginClient() {
               className="w-full"
               disabled={pending || !identifier.trim() || !password || (tenants.length > 0 && !tenantId)}
             >
-              {pending ? "Signing in…" : tenants.length > 0 ? "Continue" : "Sign in"}
+              {pending ? t("login.signingIn") : tenants.length > 0 ? t("login.continue") : t("login.signIn")}
             </Button>
             <p className="text-center text-xs text-muted-foreground">
-              Accounts are provisioned by academic affairs — there is no self-signup.
+              {t("login.noSignup")}
             </p>
           </form>
         </CardContent>

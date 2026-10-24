@@ -9,21 +9,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getTeacherTimetable } from "@/lib/api/teachers";
 import { ApiError } from "@/lib/api/client";
 import type { TeacherTimetableEntry } from "@/lib/api/types";
-import { formatTime } from "@/lib/utils";
+import { formatTimeLocale } from "@/lib/utils";
+import { useI18n, type MessageKey } from "@/lib/i18n/locale-provider";
 
 const DAY_ORDER = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
-const DAY_LABELS: Record<string, string> = {
-  MON: "Monday",
-  TUE: "Tuesday",
-  WED: "Wednesday",
-  THU: "Thursday",
-  FRI: "Friday",
-  SAT: "Saturday",
-  SUN: "Sunday",
+const DAY_KEYS: Record<string, MessageKey> = {
+  MON: "timetable.dayMon",
+  TUE: "timetable.dayTue",
+  WED: "timetable.dayWed",
+  THU: "timetable.dayThu",
+  FRI: "timetable.dayFri",
+  SAT: "timetable.daySat",
+  SUN: "timetable.daySun",
 };
 
 export function TimetableClient() {
+  const { t, locale } = useI18n();
   const [entries, setEntries] = React.useState<TeacherTimetableEntry[]>([]);
   const [teacherName, setTeacherName] = React.useState("");
   const [yearName, setYearName] = React.useState("");
@@ -40,10 +42,12 @@ export function TimetableClient() {
         setLoading(false);
       },
       (cause: unknown) => {
-        setError(cause instanceof ApiError ? cause.message : "Unable to load timetable");
+        setError(cause instanceof ApiError ? cause.message : t("timetable.loadError"));
         setLoading(false);
       },
     );
+    // t is stable per locale; fetching once per mount is intentional.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {
@@ -82,12 +86,12 @@ export function TimetableClient() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{yearName}</p>
-          <h1 className="mt-1 text-xl font-semibold tracking-tight">Timetable</h1>
+          <h1 className="mt-1 text-xl font-semibold tracking-tight">{t("timetable.title")}</h1>
           {teacherName && <p className="mt-1 text-sm text-muted-foreground">{teacherName}</p>}
         </div>
         {byDay.length > 0 && (
           <Button type="button" variant="outline" size="sm" onClick={() => window.print()} className="print:hidden">
-            <Printer size={14} aria-hidden /> Print
+            <Printer size={14} aria-hidden /> {t("common.print")}
           </Button>
         )}
       </div>
@@ -96,30 +100,30 @@ export function TimetableClient() {
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive print:hidden">
           <span>{error}</span>
           <Button type="button" variant="outline" size="sm" onClick={handleRetry}>
-            Retry
+            {t("common.retry")}
           </Button>
         </div>
       )}
 
       {byDay.length === 0 && !error ? (
-        <p className="text-sm text-muted-foreground">No timetable entries assigned.</p>
+        <p className="text-sm text-muted-foreground">{t("timetable.noEntries")}</p>
       ) : (
         <div className="space-y-3">
           {byDay.map(({ day, entries: dayEntries }) => (
             <Card key={day} className="break-inside-avoid">
               <CardHeader>
-                <CardTitle className="text-sm">{DAY_LABELS[day] ?? day}</CardTitle>
+                <CardTitle className="text-sm">{t(DAY_KEYS[day] ?? "timetable.dayMon")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ol className="divide-y rounded-lg border">
                   {dayEntries.map((entry) => (
                     <li key={entry.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-1.5 text-sm">
                       <span className="shrink-0 font-mono text-xs text-muted-foreground sm:w-32">
-                        {formatTime(entry.startTime)}–{formatTime(entry.endTime)}
+                        {formatTimeLocale(entry.startTime, locale)}–{formatTimeLocale(entry.endTime, locale)}
                       </span>
                       <span className="order-3 min-w-0 basis-full break-words sm:order-1 sm:flex-1 sm:truncate">
                         {entry.isBreak ? (
-                          <span className="text-muted-foreground">Break</span>
+                          <span className="text-muted-foreground">{t("common.break")}</span>
                         ) : (
                           <>
                             <span className="font-medium">{entry.subjectName ?? "—"}</span>

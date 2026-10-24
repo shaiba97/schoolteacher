@@ -10,8 +10,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { listTeacherClasses } from "@/lib/api/teachers";
 import { ApiError } from "@/lib/api/client";
 import type { TeacherClassItem } from "@/lib/api/types";
+import { useI18n } from "@/lib/i18n/locale-provider";
 
 export function ClassesClient() {
+  const { t } = useI18n();
   const [classes, setClasses] = React.useState<TeacherClassItem[]>([]);
   const [yearName, setYearName] = React.useState("");
   const [error, setError] = React.useState("");
@@ -26,10 +28,12 @@ export function ClassesClient() {
         setLoading(false);
       },
       (cause: unknown) => {
-        setError(cause instanceof ApiError ? cause.message : "Unable to load classes");
+        setError(cause instanceof ApiError ? cause.message : t("classes.loadError"));
         setLoading(false);
       },
     );
+    // t is stable per locale; fetching once per mount is intentional.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {
@@ -55,14 +59,14 @@ export function ClassesClient() {
     <div className="space-y-4">
       <div>
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{yearName}</p>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight">My Classes</h1>
+        <h1 className="mt-1 text-xl font-semibold tracking-tight">{t("classes.title")}</h1>
       </div>
 
       {error && (
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
           <span>{error}</span>
           <Button type="button" variant="outline" size="sm" onClick={handleRetry}>
-            Retry
+            {t("common.retry")}
           </Button>
         </div>
       )}
@@ -71,9 +75,9 @@ export function ClassesClient() {
         <Card>
           <CardContent className="p-6 text-center">
             <BookOpenCheck size={20} className="mx-auto text-muted-foreground" aria-hidden />
-            <p className="mt-2 text-sm font-medium">No classes assigned</p>
+            <p className="mt-2 text-sm font-medium">{t("classes.noClasses")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Classes appear here once academic affairs assigns subjects to you.
+              {t("classes.noClassesHint")}
             </p>
           </CardContent>
         </Card>
@@ -98,7 +102,7 @@ export function ClassesClient() {
                 </div>
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <UsersRound size={12} aria-hidden />
-                  {item.studentCount} student{item.studentCount === 1 ? "" : "s"}
+                  {item.studentCount === 1 ? t("classes.studentOne") : t("classes.studentMany", { count: item.studentCount })}
                 </p>
               </CardContent>
             </Card>

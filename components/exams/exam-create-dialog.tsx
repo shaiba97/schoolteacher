@@ -14,15 +14,14 @@ import {
 import { ApiError } from "@/lib/api/client";
 import type { TeacherClassItem } from "@/lib/api/types";
 import { todayISO } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/locale-provider";
 
 export type ExamKind = "test" | "exam";
 
-const KIND: Record<ExamKind, { title: string; typeName: string; noun: string; label: string }> = {
-  test: { title: "New test", typeName: "Test", noun: "test", label: "Test" },
-  exam: { title: "New exam", typeName: "Exam", noun: "exam", label: "Exam" },
+const KIND: Record<ExamKind, { title: "examCreate.testTitle" | "examCreate.examTitle"; typeName: string; noun: "test" | "exam"; label: "examCreate.testLabel" | "examCreate.examLabel" }> = {
+  test: { title: "examCreate.testTitle", typeName: "Test", noun: "test", label: "examCreate.testLabel" },
+  exam: { title: "examCreate.examTitle", typeName: "Exam", noun: "exam", label: "examCreate.examLabel" },
 };
-
-const STEPS = ["Class", "Subject", "Details", "Review"] as const;
 
 type Draft = {
   classId: string;
@@ -84,6 +83,7 @@ function ExamCreateForm({
   onCreated: (examId: string) => void;
 }) {
   const config = KIND[kind];
+  const { t } = useI18n();
   const [step, setStep] = React.useState(0);
   const [classes, setClasses] = React.useState<TeacherClassItem[]>([]);
   const [yearId, setYearId] = React.useState("");
@@ -110,9 +110,7 @@ function ExamCreateForm({
           (type) => type.name.trim().toLowerCase() === config.typeName.toLowerCase(),
         );
         if (!match) {
-          setLoadError(
-            `No "${config.typeName}" exam type is configured — ask academic affairs to create it.`,
-          );
+          setLoadError(t("examCreate.noType", { name: config.typeName }));
         } else {
           setExamTypeId(match.id);
         }
@@ -120,13 +118,15 @@ function ExamCreateForm({
       },
       (cause: unknown) => {
         if (cancelled) return;
-        setLoadError(cause instanceof ApiError ? cause.message : "Unable to load options");
+        setLoadError(cause instanceof ApiError ? cause.message : t("examCreate.loadError"));
         setLoading(false);
       },
     );
     return () => {
       cancelled = true;
     };
+    // t is stable per locale; loading once per open is intentional.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.typeName]);
 
   const chosenClass = classes.find((schoolClass) => schoolClass.classId === draft.classId) ?? null;
@@ -139,7 +139,9 @@ function ExamCreateForm({
     patch({
       classId,
       classSubjectId: auto?.classSubjectId ?? "",
-      name: !draft.nameTouched && auto ? `${auto.subjectName} ${config.label}` : draft.name,
+      name: !draft.nameTouched && auto
+        ? t("examCreate.namePlaceholder", { subject: auto.subjectName, label: t(config.label) })
+        : draft.name,
     });
   }
 
@@ -147,38 +149,40 @@ function ExamCreateForm({
     const subject = chosenClass?.subjects.find((item) => item.classSubjectId === classSubjectId);
     patch({
       classSubjectId,
-      name: !draft.nameTouched && subject ? `${subject.subjectName} ${config.label}` : draft.name,
+      name: !draft.nameTouched && subject
+        ? t("examCreate.namePlaceholder", { subject: subject.subjectName, label: t(config.label) })
+        : draft.name,
     });
   }
 
   function detailsError(values: Draft): string {
-    if (!values.name.trim()) return `Name this ${config.noun}.`;
-    if (!values.date) return "Pick a date.";
+    if (!values.name.trim()) return t("examCreate.nameRequired", { noun: t(config.label).toLowerCase() });
+    if (!values.date) return t("examCreate.dateRequired");
     const max = Number(values.maxMarks);
-    if (!Number.isFinite(max) || max < 1) return "Max marks must be at least 1.";
+    if (!Number.isFinite(max) || max < 1) return t("examCreate.maxRequired");
     if (values.passingMarks.trim()) {
       const pass = Number(values.passingMarks);
-      if (!Number.isFinite(pass) || pass < 0) return "Passing marks must be 0 or more.";
-      if (pass > max) return "Passing marks cannot exceed max marks.";
+      if (!Number.isFinite(pass) || pass < 0) return t("examCreate.passRequired");
+      if (pass > max) return t("examCreate.passExceedsMax");
     }
     if (values.sampleFile) {
-      if (values.sampleFile.type !== "application/pdf") return "Sample must be a PDF file.";
-      if (values.sampleFile.size > 10 * 1024 * 1024) return "Sample must be 10MB or less.";
+      if (values.sampleFile.type !== "application/pdf") return t("examCreate.samplePdf");
+      if (values.sampleFile.size > 10 * 1024 * 1024) return t("examCreate.sampleSize");
     }
     return "";
   }
 
   function stepError(): string {
-    if (step === 0 && !draft.classId) return "Pick a class.";
-    if (step === 1 && !draft.classSubjectId) return "Pick a subject you teach in this class.";
+    if (step === 0 && !draft.classId) return t("examCreate.pickClass");
+    if (step === 1 && !draft.classSubjectId) return t("examCreate.pickSubject");
     if (step === 2) return detailsError(draft);
     return "";
   }
 
   /** Full validation at submit time: the Review step itself has no fields. */
   function submitErrorText(values: Draft): string {
-    if (!values.classId) return "Pick a class.";
-    if (!values.classSubjectId) return "Pick a subject you teach in this class.";
+    if (!values.classId) return t("examCreate.pickClass");
+    if (!values.classSubjectId) return t("examCreate.pickSubject");
     return detailsError(values);
   }
 
@@ -190,7 +194,7 @@ function ExamCreateForm({
     if (submitGuard.current) return;
     const problem = submitErrorText(draft);
     if (problem || !chosenSubject || !examTypeId || !yearId) {
-      setSubmitError(problem || "Complete every step before submitting.");
+      setSubmitError(problem || t("examCreate.submitIncomplete"));
       return;
     }
     submitGuard.current = true;
@@ -228,23 +232,25 @@ function ExamCreateForm({
         await deleteStagedExamSample(stagedKey).catch(() => undefined);
         stagedKey = null;
       }
-      setSubmitError(cause instanceof ApiError ? cause.message : `Unable to create ${config.noun}`);
+      setSubmitError(cause instanceof ApiError ? cause.message : t("examCreate.createError", { noun: t(config.label).toLowerCase() }));
     } finally {
       submitGuard.current = false;
       setSubmitting(false);
     }
   }
 
+  const STEPS = ["examCreate.stepClass", "examCreate.stepSubject", "examCreate.stepDetails", "examCreate.stepReview"] as const;
+
   return (
     <>
       <DialogHeader>
-        <DialogTitle>{config.title}</DialogTitle>
+        <DialogTitle>{t(config.title)}</DialogTitle>
       </DialogHeader>
         <div className="space-y-4 p-6 pt-2">
-          <ol className="flex flex-wrap gap-1.5" aria-label="Progress">
-            {STEPS.map((label, index) => (
+          <ol className="flex flex-wrap gap-1.5" aria-label={t("examCreate.progressAria")}>
+            {STEPS.map((stepKey, index) => (
               <li
-                key={label}
+                key={stepKey}
                 className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${
                   index === step
                     ? "border-primary bg-primary text-primary-foreground"
@@ -254,13 +260,13 @@ function ExamCreateForm({
                 }`}
                 aria-current={index === step ? "step" : undefined}
               >
-                {index + 1}. {label}
+                {index + 1}. {t(stepKey)}
               </li>
             ))}
           </ol>
 
           {loading ? (
-            <p className="text-sm text-muted-foreground" role="status">Loading classes…</p>
+            <p className="text-sm text-muted-foreground" role="status">{t("examCreate.loadingClasses")}</p>
           ) : (
             <>
               {blockingError && (
@@ -268,13 +274,13 @@ function ExamCreateForm({
               )}
               {step === 0 && (
                 <div className="space-y-1.5">
-                  <Label htmlFor="exam-class">Class *</Label>
+                  <Label htmlFor="exam-class">{t("examCreate.classLabel")}</Label>
                   <Select
                     id="exam-class"
                     value={draft.classId}
                     onChange={(event) => pickClass(event.target.value)}
                   >
-                    <option value="">Select a class you teach</option>
+                    <option value="">{t("examCreate.classOption")}</option>
                     {classes.map((schoolClass) => (
                       <option key={schoolClass.classId} value={schoolClass.classId}>
                         {schoolClass.className}
@@ -286,13 +292,13 @@ function ExamCreateForm({
 
               {step === 1 && (
                 <div className="space-y-1.5">
-                  <Label htmlFor="exam-subject">Subject *</Label>
+                  <Label htmlFor="exam-subject">{t("examCreate.subjectLabel")}</Label>
                   <Select
                     id="exam-subject"
                     value={draft.classSubjectId}
                     onChange={(event) => pickSubject(event.target.value)}
                   >
-                    <option value="">Select a subject you teach here</option>
+                    <option value="">{t("examCreate.subjectOption")}</option>
                     {(chosenClass?.subjects ?? []).map((subject) => (
                       <option key={subject.classSubjectId} value={subject.classSubjectId}>
                         {subject.subjectName}
@@ -301,11 +307,11 @@ function ExamCreateForm({
                   </Select>
                   {chosenClass && chosenClass.subjects.length === 0 ? (
                     <p role="alert" className="text-xs text-destructive">
-                      No subjects are assigned to you in {chosenClass.className} — pick another class.
+                      {t("examCreate.noSubjects", { name: chosenClass.className })}
                     </p>
                   ) : (
                     <p className="text-xs text-muted-foreground">
-                      Only subjects assigned to you in {chosenClass?.className ?? "this class"} are listed.
+                      {t("examCreate.onlyMine", { name: chosenClass?.className ?? t("examCreate.stepSubject") })}
                     </p>
                   )}
                 </div>
@@ -314,16 +320,16 @@ function ExamCreateForm({
               {step === 2 && (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5 sm:col-span-2">
-                    <Label htmlFor="exam-name">Name *</Label>
+                    <Label htmlFor="exam-name">{t("examCreate.nameLabel")}</Label>
                     <Input
                       id="exam-name"
                       value={draft.name}
                       onChange={(event) => patch({ name: event.target.value, nameTouched: true })}
-                      placeholder={`${chosenSubject?.subjectName ?? "Subject"} ${config.label}`}
+                      placeholder={t("examCreate.namePlaceholder", { subject: chosenSubject?.subjectName ?? "Subject", label: t(config.label) })}
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="exam-date">Date *</Label>
+                    <Label htmlFor="exam-date">{t("examCreate.dateLabel")}</Label>
                     <Input
                       id="exam-date"
                       type="date"
@@ -332,7 +338,7 @@ function ExamCreateForm({
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="exam-max">Max marks *</Label>
+                    <Label htmlFor="exam-max">{t("examCreate.maxLabel")}</Label>
                     <Input
                       id="exam-max"
                       type="number"
@@ -343,7 +349,7 @@ function ExamCreateForm({
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="exam-pass">Passing marks (optional)</Label>
+                    <Label htmlFor="exam-pass">{t("examCreate.passLabel")}</Label>
                     <Input
                       id="exam-pass"
                       type="number"
@@ -354,27 +360,27 @@ function ExamCreateForm({
                     />
                   </div>
                   <div className="space-y-1.5 sm:col-span-2">
-                    <Label htmlFor="exam-sample">Sample paper (PDF, optional)</Label>
+                    <Label htmlFor="exam-sample">{t("examCreate.sampleLabel")}</Label>
                     <Input
                       id="exam-sample"
                       type="file"
                       accept="application/pdf"
                       onChange={(event) => patch({ sampleFile: event.target.files?.[0] ?? null })}
                     />
-                    <p className="text-xs text-muted-foreground">PDF up to 10MB. Can also be attached later from the exam page.</p>
+                    <p className="text-xs text-muted-foreground">{t("examCreate.sampleHint")}</p>
                   </div>
                 </div>
               )}
 
               {step === 3 && (
                 <dl className="space-y-1.5 text-sm">
-                  <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Type</dt><dd className="font-medium">{config.label}</dd></div>
-                  <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Class</dt><dd className="font-medium">{chosenClass?.className}</dd></div>
-                  <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Subject</dt><dd className="font-medium">{chosenSubject?.subjectName}</dd></div>
-                  <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Name</dt><dd className="min-w-0 truncate text-right font-medium">{draft.name.trim()}</dd></div>
-                  <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Date</dt><dd className="font-medium">{draft.date}</dd></div>
-                  <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Max marks</dt><dd className="font-medium">{draft.maxMarks}{draft.passingMarks.trim() ? ` (pass ${draft.passingMarks})` : ""}</dd></div>
-                  <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Sample</dt><dd className="min-w-0 truncate text-right font-medium">{draft.sampleFile ? draft.sampleFile.name : "None"}</dd></div>
+                  <div className="flex justify-between gap-2"><dt className="text-muted-foreground">{t("examCreate.typeField")}</dt><dd className="font-medium">{t(config.label)}</dd></div>
+                  <div className="flex justify-between gap-2"><dt className="text-muted-foreground">{t("examCreate.classField")}</dt><dd className="font-medium">{chosenClass?.className}</dd></div>
+                  <div className="flex justify-between gap-2"><dt className="text-muted-foreground">{t("examCreate.subjectField")}</dt><dd className="font-medium">{chosenSubject?.subjectName}</dd></div>
+                  <div className="flex justify-between gap-2"><dt className="text-muted-foreground">{t("examCreate.nameField")}</dt><dd className="min-w-0 truncate text-right font-medium">{draft.name.trim()}</dd></div>
+                  <div className="flex justify-between gap-2"><dt className="text-muted-foreground">{t("examCreate.dateField")}</dt><dd className="font-medium">{draft.date}</dd></div>
+                  <div className="flex justify-between gap-2"><dt className="text-muted-foreground">{t("examCreate.maxField")}</dt><dd className="font-medium">{draft.maxMarks}{draft.passingMarks.trim() ? ` ${t("examCreate.passSuffix", { count: draft.passingMarks })}` : ""}</dd></div>
+                  <div className="flex justify-between gap-2"><dt className="text-muted-foreground">{t("examCreate.sampleField")}</dt><dd className="min-w-0 truncate text-right font-medium">{draft.sampleFile ? draft.sampleFile.name : t("examCreate.none")}</dd></div>
                 </dl>
               )}
 
@@ -386,15 +392,15 @@ function ExamCreateForm({
 
           <div className="flex justify-between border-t pt-4">
             <Button type="button" variant="outline" disabled={step === 0 || submitting} onClick={() => setStep(step - 1)}>
-              Back
+              {t("examCreate.back")}
             </Button>
             {step < STEPS.length - 1 ? (
               <Button type="button" disabled={!!blockingError || submitting} onClick={() => setStep(step + 1)}>
-                Next
+                {t("examCreate.next")}
               </Button>
             ) : (
               <Button type="button" disabled={!!blockingError || submitting} onClick={() => void handleSubmit()}>
-                {submitting ? "Creating…" : `Create ${config.noun}`}
+                {submitting ? t("examCreate.creating") : t(config.noun === "test" ? "examCreate.createTest" : "examCreate.createExam")}
               </Button>
             )}
           </div>

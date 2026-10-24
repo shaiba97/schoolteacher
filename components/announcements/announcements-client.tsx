@@ -23,9 +23,11 @@ import {
 } from "@/lib/api/teachers";
 import { ApiError } from "@/lib/api/client";
 import type { TeacherNotification } from "@/lib/api/types";
+import { useI18n } from "@/lib/i18n/locale-provider";
 import { formatDateTime } from "@/lib/utils";
 
 export function AnnouncementsClient() {
+  const { t, locale } = useI18n();
   const [items, setItems] = React.useState<TeacherNotification[]>([]);
   const [error, setError] = React.useState("");
   const [loading, setLoading] = React.useState(true);
@@ -39,10 +41,12 @@ export function AnnouncementsClient() {
         setLoading(false);
       },
       (cause: unknown) => {
-        setError(cause instanceof ApiError ? cause.message : "Unable to load announcements");
+        setError(cause instanceof ApiError ? cause.message : t("announcements.loadError"));
         setLoading(false);
       },
     );
+    // t is stable per locale; fetching once per mount is intentional.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {
@@ -79,13 +83,13 @@ export function AnnouncementsClient() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Announcements</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{t("announcements.title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Messages for you, plus class announcements you send to parents and students.
+            {t("announcements.subtitle")}
           </p>
         </div>
         <Button type="button" size="sm" onClick={() => setComposeOpen(true)}>
-          <Megaphone size={14} aria-hidden /> New announcement
+          <Megaphone size={14} aria-hidden /> {t("announcements.new")}
         </Button>
       </div>
 
@@ -93,7 +97,7 @@ export function AnnouncementsClient() {
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
           <span>{error}</span>
           <Button type="button" variant="outline" size="sm" onClick={handleRetry}>
-            Retry
+            {t("common.retry")}
           </Button>
         </div>
       )}
@@ -102,9 +106,9 @@ export function AnnouncementsClient() {
         <Card>
           <CardContent className="p-6 text-center">
             <Bell size={20} className="mx-auto text-muted-foreground" aria-hidden />
-            <p className="mt-2 text-sm font-medium">No announcements</p>
+            <p className="mt-2 text-sm font-medium">{t("announcements.none")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Messages from the school and your classes will appear here.
+              {t("announcements.noneHint")}
             </p>
           </CardContent>
         </Card>
@@ -121,11 +125,11 @@ export function AnnouncementsClient() {
                       <p className="min-w-0 flex-1 truncate text-sm font-medium">{item.title}</p>
                   <span className="flex shrink-0 items-center gap-1.5">
                     <Badge variant="outline">{item.type.replace(/_/g, " ")}</Badge>
-                    {!item.readAt && <Badge variant="info">New</Badge>}
+                    {!item.readAt && <Badge variant="info">{t("common.new")}</Badge>}
                   </span>
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">{item.body}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(item.createdAt)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(item.createdAt, locale)}</p>
               </button>
             </li>
           ))}
@@ -139,6 +143,7 @@ export function AnnouncementsClient() {
 
 function ComposeDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   // Mounted fresh on every open (see caller), so initializers reset the form.
+  const { t } = useI18n();
   const [classes, setClasses] = React.useState<Array<{ id: string; name: string }>>([]);
   const [classId, setClassId] = React.useState("");
   const [title, setTitle] = React.useState("");
@@ -148,20 +153,32 @@ function ComposeDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
   const [sentNote, setSentNote] = React.useState("");
 
   React.useEffect(() => {
+    let cancelled = false;
     listTeacherClasses().then(
-      (res) => setClasses(res.classes.map((c) => ({ id: c.classId, name: c.className }))),
-      () => setFormError("Unable to load your classes"),
+      (res) => {
+        if (cancelled) return;
+        setClasses(res.classes.map((c) => ({ id: c.classId, name: c.className })));
+      },
+      () => {
+        if (cancelled) return;
+        setFormError(t("announcements.loadClassesError"));
+      },
     );
+    return () => {
+      cancelled = true;
+    };
+    // t is stable per locale; loading once per open is intentional.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!classId) {
-      setFormError("Select a class you teach.");
+      setFormError(t("announcements.selectClass"));
       return;
     }
     if (!title.trim() || !message.trim()) {
-      setFormError("Title and message are both required.");
+      setFormError(t("announcements.required"));
       return;
     }
     setPending(true);
@@ -173,11 +190,11 @@ function ComposeDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
         title: title.trim(),
         message: message.trim(),
       });
-      setSentNote(`Sent to ${result.recipients} recipient${result.recipients === 1 ? "" : "s"}.`);
+      setSentNote(result.recipients === 1 ? t("announcements.sentOne") : t("announcements.sentMany", { count: result.recipients }));
       setTitle("");
       setMessage("");
     } catch (cause) {
-      setFormError(cause instanceof ApiError ? cause.message : "Unable to send announcement");
+      setFormError(cause instanceof ApiError ? cause.message : t("announcements.sendError"));
     } finally {
       setPending(false);
     }
@@ -187,16 +204,16 @@ function ComposeDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
     <Dialog open={open} onOpenChange={(o) => { if (!pending) onOpenChange(o); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New announcement</DialogTitle>
+          <DialogTitle>{t("announcements.composeTitle")}</DialogTitle>
           <DialogDescription>
-            Sent to parents and students of one class you teach who have accounts.
+            {t("announcements.composeSubtitle")}
           </DialogDescription>
         </DialogHeader>
         <form className="space-y-4 p-6 pt-2" onSubmit={(event) => void handleSubmit(event)}>
           <div className="space-y-1.5">
-            <Label htmlFor="announce-class">Class</Label>
+            <Label htmlFor="announce-class">{t("announcements.classLabel")}</Label>
             <Select id="announce-class" value={classId} onChange={(event) => setClassId(event.target.value)}>
-              <option value="">Select…</option>
+              <option value="">{t("announcements.selectOption")}</option>
               {classes.map((option) => (
                 <option key={option.id} value={option.id}>
                   {option.name}
@@ -205,23 +222,23 @@ function ComposeDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="announce-title">Title</Label>
+            <Label htmlFor="announce-title">{t("announcements.titleLabel")}</Label>
             <Input
               id="announce-title"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="e.g. Quiz postponed to Thursday"
+              placeholder={t("announcements.titlePlaceholder")}
               maxLength={255}
               required
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="announce-message">Message</Label>
+            <Label htmlFor="announce-message">{t("announcements.messageLabel")}</Label>
             <Textarea
               id="announce-message"
               value={message}
               onChange={(event) => setMessage(event.target.value)}
-              placeholder="Write the announcement…"
+              placeholder={t("announcements.messagePlaceholder")}
               maxLength={4000}
               required
             />
@@ -238,10 +255,10 @@ function ComposeDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o
           )}
           <DialogFooter className="p-0 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
-              {sentNote ? "Close" : "Cancel"}
+              {sentNote ? t("common.close") : t("common.cancel")}
             </Button>
             <Button type="submit" disabled={pending || !classId || !title.trim() || !message.trim()}>
-              {pending ? "Sending…" : "Send"}
+              {pending ? t("announcements.sending") : t("announcements.send")}
             </Button>
           </DialogFooter>
         </form>

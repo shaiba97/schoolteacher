@@ -13,11 +13,20 @@ import { ApiError } from "@/lib/api/client";
 import type { TeacherAttendanceSessionDetail } from "@/lib/api/types";
 import { useRealtimeEvent } from "@/lib/realtime/socket";
 import { formatDate } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/locale-provider";
 import { Toast } from "@base-ui/react/toast";
 
 const STATUSES = ["PRESENT", "ABSENT", "LATE", "EXCUSED"] as const;
 
+const STATUS_KEYS = {
+  PRESENT: "session.statusPRESENT",
+  ABSENT: "session.statusABSENT",
+  LATE: "session.statusLATE",
+  EXCUSED: "session.statusEXCUSED",
+} as const satisfies Record<string, string>;
+
 export function SessionClient({ sessionId }: { sessionId: string }) {
+  const { t, locale } = useI18n();
   const [detail, setDetail] = React.useState<TeacherAttendanceSessionDetail | null>(null);
   const [marks, setMarks] = React.useState<Record<string, string>>({});
   const [remarks, setRemarks] = React.useState<Record<string, string>>({});
@@ -55,7 +64,7 @@ export function SessionClient({ sessionId }: { sessionId: string }) {
         setLoading(false);
       },
       (cause: unknown) => {
-        setError(cause instanceof ApiError ? cause.message : "Unable to load session");
+        setError(cause instanceof ApiError ? cause.message : t("session.loadError"));
         setLoading(false);
       },
     );
@@ -108,14 +117,21 @@ export function SessionClient({ sessionId }: { sessionId: string }) {
       const at = timeNow();
       setSavedAt(at);
       setSavedSnapshot(snapshotOf(marks, remarks));
-      const periodLabel =
-        detail.session.sessionNumber != null ? `Period ${detail.session.sessionNumber}` : "Whole day";
+      const period =
+        detail.session.sessionNumber != null
+          ? t("attendance.period", { period: detail.session.sessionNumber })
+          : t("attendance.wholeDay");
       toastManager.add({
-        title: "Attendance taken and submitted",
-        description: `${result.saved} record${result.saved === 1 ? "" : "s"} · ${detail.session.className} ${periodLabel} · ${at}`,
+        title: t("session.toastTitle"),
+        description: t("session.toastDescription", {
+          count: result.saved,
+          className: detail.session.className,
+          period,
+          at,
+        }),
       });
     } catch (cause) {
-      setFormError(cause instanceof ApiError ? cause.message : "Unable to save attendance");
+      setFormError(cause instanceof ApiError ? cause.message : t("session.saveError"));
     } finally {
       setSaving(false);
     }
@@ -136,12 +152,12 @@ export function SessionClient({ sessionId }: { sessionId: string }) {
     return (
       <div className="space-y-4">
         <Link href="/attendance" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-          <ArrowLeft size={14} aria-hidden /> Sessions
+          <ArrowLeft size={14} aria-hidden /> {t("session.backTo")}
         </Link>
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
-          <span>{error || "Session not found"}</span>
+          <span>{error || t("session.notFound")}</span>
           <Button type="button" variant="outline" size="sm" onClick={handleRetry}>
-            Retry
+            {t("common.retry")}
           </Button>
         </div>
       </div>
@@ -159,18 +175,20 @@ export function SessionClient({ sessionId }: { sessionId: string }) {
     <div className="space-y-4">
       <div>
         <Link href="/attendance" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-          <ArrowLeft size={14} aria-hidden /> Sessions
+          <ArrowLeft size={14} aria-hidden /> {t("session.backTo")}
         </Link>
         <h1 className="mt-1 text-xl font-semibold tracking-tight">
           {detail.session.className} ·{" "}
-          {detail.session.sessionNumber ? `Period ${detail.session.sessionNumber}` : "Whole day"} ·{" "}
-          {formatDate(detail.session.attendanceDate)}
+          {detail.session.sessionNumber
+            ? t("attendance.period", { period: detail.session.sessionNumber })
+            : t("attendance.wholeDay")}{" "}
+          · {formatDate(detail.session.attendanceDate, locale)}
         </h1>
         <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          {detail.session.subjectName ?? "General"}
+          {detail.session.subjectName ?? t("session.general")}
           {!detail.editable && (
             <Badge variant="muted">
-              <Lock size={12} aria-hidden /> Locked — same-day editing only
+              <Lock size={12} aria-hidden /> {t("session.lockedNote")}
             </Badge>
           )}
         </p>
@@ -179,16 +197,16 @@ export function SessionClient({ sessionId }: { sessionId: string }) {
       {detail.editable && (
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" size="sm" onClick={markAllPresent}>
-            Mark all present
+            {t("session.markAllPresent")}
           </Button>
           <span className="self-center text-xs text-muted-foreground">
-            {marked}/{detail.students.length} marked
+            {t("session.markedOf", { marked, total: detail.students.length })}
           </span>
         </div>
       )}
 
       {detail.students.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No enrolled students in this class.</p>
+        <p className="text-sm text-muted-foreground">{t("common.noStudents")}</p>
       ) : (
         <ol className="divide-y rounded-xl border bg-card">
           {detail.students.map((student) => (
@@ -204,12 +222,12 @@ export function SessionClient({ sessionId }: { sessionId: string }) {
                     setMarks((current) => ({ ...current, [student.studentId]: status }))
                   }
                   disabled={!detail.editable}
-                  ariaLabel={`${student.fullName} attendance status`}
+                  ariaLabel={t("session.statusAria", { name: student.fullName })}
                   className="flex-wrap"
                 >
                   {STATUSES.map((status) => (
                     <ToggleGroupItem key={status} value={status}>
-                      {status.charAt(0) + status.slice(1).toLowerCase()}
+                      {t(STATUS_KEYS[status])}
                     </ToggleGroupItem>
                   ))}
                 </ToggleGroup>
@@ -219,8 +237,8 @@ export function SessionClient({ sessionId }: { sessionId: string }) {
                     onChange={(event) =>
                       setRemarks((current) => ({ ...current, [student.studentId]: event.target.value }))
                     }
-                    placeholder="Remark (optional)"
-                    aria-label={`${student.fullName} remark`}
+                    placeholder={t("session.remarkPlaceholder")}
+                    aria-label={t("session.remarkAria", { name: student.fullName })}
                     className="h-8 w-full min-w-0 rounded-md border border-input bg-background px-2 text-xs shadow-sm sm:w-auto sm:flex-1"
                   />
                 )}
@@ -237,14 +255,18 @@ export function SessionClient({ sessionId }: { sessionId: string }) {
       )}
       {!detail.editable && marked > 0 && (
         <p role="status" className="text-sm text-muted-foreground">
-          Submitted · {marked} record{marked === 1 ? "" : "s"} on file.
+          {marked === 1
+            ? t("session.submittedFileOne")
+            : t("session.submittedFileMany", { count: marked })}
         </p>
       )}
       {detail.editable && submitted && (
         <p role="status" className="text-sm font-medium text-success">
           {savedAt !== ""
-            ? `Submitted at ${savedAt} · ${marked} record${marked === 1 ? "" : "s"} saved.`
-            : `All ${detail.students.length} marked.`}
+            ? marked === 1
+              ? t("session.savedAtOne", { at: savedAt })
+              : t("session.savedAtMany", { at: savedAt, count: marked })
+            : t("session.allMarked", { count: detail.students.length })}
         </p>
       )}
 
@@ -256,7 +278,11 @@ export function SessionClient({ sessionId }: { sessionId: string }) {
             disabled={saving || !dirty}
             className="shadow-lg"
           >
-            {saving ? "Saving…" : submitted ? "Submitted ✓" : `Save attendance (${detail.students.length})`}
+            {saving
+              ? t("common.saving")
+              : submitted
+                ? t("session.saved")
+                : t("session.save", { count: detail.students.length })}
           </Button>
         </div>
       )}

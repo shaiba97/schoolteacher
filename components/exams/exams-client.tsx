@@ -15,8 +15,14 @@ import { listTeacherExams, listTeacherPendingMarks } from "@/lib/api/teachers";
 import { ApiError } from "@/lib/api/client";
 import type { TeacherDashboard, TeacherExamItem } from "@/lib/api/types";
 import { formatDate } from "@/lib/utils";
+import { useI18n, type MessageKey } from "@/lib/i18n/locale-provider";
 
 type Scope = "authored" | "assigned" | "all";
+
+const EXAM_STATUS_KEYS: Record<string, MessageKey> = {
+  PUBLISHED: "exams.statusPUBLISHED",
+  DRAFT: "exams.statusDRAFT",
+};
 
 function statusVariant(status: string): "success" | "muted" | "secondary" {
   if (status === "PUBLISHED") return "success";
@@ -24,18 +30,28 @@ function statusVariant(status: string): "success" | "muted" | "secondary" {
   return "secondary";
 }
 
+function statusText(t: (key: MessageKey) => string, status: string): string {
+  const key = EXAM_STATUS_KEYS[status];
+  return key ? t(key) : status;
+}
+
 /** Conducted-date label: single day, or a range when the exam spans days. Null-safe. */
-function conductedLabel(startsOn?: string | null, endsOn?: string | null): string | null {
+function conductedLabel(
+  startsOn: string | null | undefined,
+  endsOn: string | null | undefined,
+  locale?: string,
+): string | null {
   if (!startsOn) return null;
   if (endsOn && endsOn.slice(0, 10) !== startsOn.slice(0, 10)) {
-    return `${formatDate(startsOn)} – ${formatDate(endsOn)}`;
+    return `${formatDate(startsOn, locale)} – ${formatDate(endsOn, locale)}`;
   }
-  return formatDate(startsOn);
+  return formatDate(startsOn, locale);
 }
 
 export function ExamsClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t, locale } = useI18n();
   const subjectPreselect = searchParams.get("subject") ?? "";
   const [tab, setTab] = React.useState("exams");
   const [scope, setScope] = React.useState<Scope>("all");
@@ -55,7 +71,7 @@ export function ExamsClient() {
         setLoading(false);
       },
       (cause: unknown) => {
-        setError(cause instanceof ApiError ? cause.message : "Unable to load exams");
+        setError(cause instanceof ApiError ? cause.message : t("exams.loadError"));
         setLoading(false);
       },
     );
@@ -101,17 +117,17 @@ export function ExamsClient() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Exams & Marks</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{t("exams.title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Exams you authored or teach in. Teachers create single-class exams only.
+            {t("exams.subtitle")}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" size="sm" onClick={() => setCreator({ kind: "test", open: true })}>
-            New test
+            {t("exams.newTest")}
           </Button>
           <Button type="button" size="sm" onClick={() => setCreator({ kind: "exam", open: true })}>
-            New exam
+            {t("exams.newExam")}
           </Button>
         </div>
       </div>
@@ -130,22 +146,23 @@ export function ExamsClient() {
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
           <span>{error}</span>
           <Button type="button" variant="outline" size="sm" onClick={handleRetry}>
-            Retry
+            {t("common.retry")}
           </Button>
         </div>
       )}
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="exams">My Exams</TabsTrigger>
+          <TabsTrigger value="exams">{t("exams.tabExams")}</TabsTrigger>
           <TabsTrigger value="pending">
-            Needs marks{pendingCount > 0 ? ` (${pendingCount})` : ""}
+            {t("exams.tabPending")}
+            {pendingCount > 0 ? ` (${pendingCount})` : ""}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="exams">
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <div className="flex flex-wrap gap-1.5" role="group" aria-label="Test or exam">
+            <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("exams.typeAria")}>
               {(["all", "test", "exam"] as const).map((option) => (
                 <Button
                   key={option}
@@ -155,11 +172,11 @@ export function ExamsClient() {
                   className="h-10"
                   onClick={() => setKindFilter(option)}
                 >
-                  {option === "all" ? "Tests & exams" : option === "test" ? "Tests" : "Exams"}
+                  {option === "all" ? t("exams.kindAll") : option === "test" ? t("exams.kindTest") : t("exams.kindExam")}
                 </Button>
               ))}
             </div>
-            <label htmlFor="exam-scope" className="sr-only">Scope</label>
+            <label htmlFor="exam-scope" className="sr-only">{t("exams.scopeAria")}</label>
             <select
               id="exam-scope"
               value={scope}
@@ -169,20 +186,20 @@ export function ExamsClient() {
               }}
               className="flex h-9 rounded-lg border border-input bg-background px-2 py-1 text-sm shadow-sm"
             >
-              <option value="all">All work</option>
-              <option value="authored">Authored by me</option>
-              <option value="assigned">I teach in</option>
+              <option value="all">{t("exams.scopeAll")}</option>
+              <option value="authored">{t("exams.scopeAuthored")}</option>
+              <option value="assigned">{t("exams.scopeAssigned")}</option>
             </select>
             {subjectFilter && (
               <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                One subject
+                {t("exams.oneSubject")}
                 <Button type="button" variant="outline" size="sm" onClick={() => setSubjectFilter("")}>
-                  Clear
+                  {t("common.clear")}
                 </Button>
               </span>
             )}
             <span className="ml-auto text-xs text-muted-foreground" role="status">
-              {visibleExams.length} shown
+              {t("common.shown", { count: visibleExams.length })}
             </span>
           </div>
 
@@ -190,18 +207,16 @@ export function ExamsClient() {
             <Card>
               <CardContent className="p-6 text-center">
                 <GraduationCap size={20} className="mx-auto text-muted-foreground" aria-hidden />
-                <p className="mt-2 text-sm font-medium">No exams here</p>
+                <p className="mt-2 text-sm font-medium">{t("exams.noExams")}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {subjectFilter
-                    ? "No visible exam contains that subject."
-                    : "Exams you author or teach in will appear here."}
+                  {subjectFilter ? t("exams.noExamsFiltered") : t("exams.noExamsHint")}
                 </p>
               </CardContent>
             </Card>
           ) : (
             <div className="space-y-2">
               {visibleExams.map((exam) => {
-                const conducted = conductedLabel(exam.startsOn, exam.endsOn);
+                const conducted = conductedLabel(exam.startsOn, exam.endsOn, locale);
                 return (
                 <Card key={exam.id}>
                   <CardHeader>
@@ -211,19 +226,19 @@ export function ExamsClient() {
                           {exam.name}
                         </Link>
                       </CardTitle>
-                      <Badge variant={statusVariant(exam.status)}>{exam.status}</Badge>
+                      <Badge variant={statusVariant(exam.status)}>{statusText(t, exam.status)}</Badge>
                       {exam.examType && <Badge variant="outline">{exam.examType.name}</Badge>}
-                      {exam.isAuthor && <Badge variant="info">Author</Badge>}
+                      {exam.isAuthor && <Badge variant="info">{t("exams.author")}</Badge>}
                       {exam.roomLocked && (
                         <Badge variant="muted">
-                          <Lock size={12} aria-hidden /> Locked
+                          <Lock size={12} aria-hidden /> {t("common.locked")}
                         </Badge>
                       )}
                     </div>
                     {conducted && (
                       <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                         <CalendarDays size={14} aria-hidden />
-                        Conducted {conducted}
+                        {t("exams.conducted", { date: conducted })}
                       </p>
                     )}
                   </CardHeader>
@@ -239,7 +254,7 @@ export function ExamsClient() {
                       ))}
                     </div>
                     <Link href={`/exams/${exam.id}`} className={buttonVariants({ variant: "outline", size: "sm" })}>
-                      {exam.pendingSubjects > 0 ? "Enter marks" : "View exam"}
+                      {exam.pendingSubjects > 0 ? t("exams.enterMarks") : t("exams.viewExam")}
                     </Link>
                   </CardContent>
                 </Card>
@@ -251,13 +266,13 @@ export function ExamsClient() {
 
         <TabsContent value="pending">
           {pending.filter((exam) => exam.pendingCount > 0).length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nothing waiting for marks. Nice.</p>
+            <p className="text-sm text-muted-foreground">{t("exams.nothingPending")}</p>
           ) : (
             <div className="space-y-2">
               {pending
                 .filter((exam) => exam.pendingCount > 0)
                 .map((exam) => {
-                  const conducted = exam.examDate ? formatDate(exam.examDate) : null;
+                  const conducted = exam.examDate ? formatDate(exam.examDate, locale) : null;
                   return (
                   <Card key={exam.examId}>
                     <CardHeader>
@@ -267,12 +282,12 @@ export function ExamsClient() {
                             {exam.examName}
                           </Link>
                         </CardTitle>
-                        <Badge variant={statusVariant(exam.examStatus)}>{exam.examStatus}</Badge>
+                        <Badge variant={statusVariant(exam.examStatus)}>{statusText(t, exam.examStatus)}</Badge>
                       </div>
                       {conducted && (
                         <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                           <CalendarDays size={14} aria-hidden />
-                          Conducted {conducted}
+                          {t("exams.conducted", { date: conducted })}
                         </p>
                       )}
                     </CardHeader>
@@ -288,7 +303,7 @@ export function ExamsClient() {
                         </div>
                       ))}
                       <Link href={`/exams/${exam.examId}`} className={buttonVariants({ variant: "default", size: "sm" })}>
-                        Enter marks
+                        {t("exams.enterMarks")}
                       </Link>
                     </CardContent>
                   </Card>

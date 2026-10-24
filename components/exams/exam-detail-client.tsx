@@ -14,6 +14,17 @@ import { ApiError } from "@/lib/api/client";
 import type { TeacherExamDetail, TeacherExamDetailSubject } from "@/lib/api/types";
 import { Toast } from "@base-ui/react/toast";
 import { formatDate } from "@/lib/utils";
+import { useI18n, type MessageKey } from "@/lib/i18n/locale-provider";
+
+const EXAM_STATUS_KEYS: Record<string, MessageKey> = {
+  PUBLISHED: "exams.statusPUBLISHED",
+  DRAFT: "exams.statusDRAFT",
+};
+
+function statusText(t: (key: MessageKey) => string, status: string): string {
+  const key = EXAM_STATUS_KEYS[status];
+  return key ? t(key) : status;
+}
 
 function statusVariant(status: string): "success" | "muted" | "secondary" {
   if (status === "PUBLISHED") return "success";
@@ -22,15 +33,20 @@ function statusVariant(status: string): "success" | "muted" | "secondary" {
 }
 
 /** Conducted-date label: single day, or a range when the exam spans days. Null-safe. */
-function conductedLabel(startsOn?: string | null, endsOn?: string | null): string | null {
+function conductedLabel(
+  startsOn: string | null | undefined,
+  endsOn: string | null | undefined,
+  locale?: string,
+): string | null {
   if (!startsOn) return null;
   if (endsOn && endsOn.slice(0, 10) !== startsOn.slice(0, 10)) {
-    return `${formatDate(startsOn)} – ${formatDate(endsOn)}`;
+    return `${formatDate(startsOn, locale)} – ${formatDate(endsOn, locale)}`;
   }
-  return formatDate(startsOn);
+  return formatDate(startsOn, locale);
 }
 
 export function ExamDetailClient({ examId }: { examId: string }) {
+  const { t, locale } = useI18n();
   const [detail, setDetail] = React.useState<TeacherExamDetail | null>(null);
   const [error, setError] = React.useState("");
   const [loading, setLoading] = React.useState(true);
@@ -43,7 +59,7 @@ export function ExamDetailClient({ examId }: { examId: string }) {
         setLoading(false);
       },
       (cause: unknown) => {
-        setError(cause instanceof ApiError ? cause.message : "Unable to load exam");
+        setError(cause instanceof ApiError ? cause.message : t("examDetail.loadError"));
         setLoading(false);
       },
     );
@@ -75,46 +91,46 @@ export function ExamDetailClient({ examId }: { examId: string }) {
     return (
       <div className="space-y-4">
         <Link href="/exams" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-          <ArrowLeft size={14} aria-hidden /> Exams
+          <ArrowLeft size={14} aria-hidden /> {t("examDetail.backTo")}
         </Link>
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
-          <span>{error || "Exam not found"}</span>
+          <span>{error || t("examDetail.notFound")}</span>
           <Button type="button" variant="outline" size="sm" onClick={handleRetry}>
-            Retry
+            {t("common.retry")}
           </Button>
         </div>
       </div>
     );
   }
 
-  const conducted = conductedLabel(detail.startsOn, detail.endsOn);
+  const conducted = conductedLabel(detail.startsOn, detail.endsOn, locale);
 
   return (
     <div className="space-y-4">
       <div>
         <Link href="/exams" className={buttonVariants({ variant: "ghost", size: "sm" })}>
-          <ArrowLeft size={14} aria-hidden /> Exams
+          <ArrowLeft size={14} aria-hidden /> {t("examDetail.backTo")}
         </Link>
         <h1 className="mt-1 text-xl font-semibold tracking-tight">{detail.name}</h1>
         <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
-          <Badge variant={statusVariant(detail.status)}>{detail.status}</Badge>
+          <Badge variant={statusVariant(detail.status)}>{statusText(t, detail.status)}</Badge>
           {detail.examType && <Badge variant="outline">{detail.examType.name}</Badge>}
-          {detail.isAuthor && <Badge variant="info">Author</Badge>}
+          {detail.isAuthor && <Badge variant="info">{t("exams.author")}</Badge>}
           {detail.roomLocked && (
             <Badge variant="muted">
-              <Lock size={12} aria-hidden /> Locked
+              <Lock size={12} aria-hidden /> {t("common.locked")}
             </Badge>
           )}
         </p>
         {conducted && (
           <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
             <CalendarDays size={14} aria-hidden />
-            Conducted {conducted}
+            {t("exams.conducted", { date: conducted })}
           </p>
         )}
         {!detail.isAuthor && (
           <p className="mt-1 text-xs text-muted-foreground">
-            Showing only your subjects — other subjects&apos; marks stay invisible.
+            {t("examDetail.onlyYours")}
           </p>
         )}
       </div>
@@ -149,6 +165,7 @@ function ExamSampleSection({
   canAttach: boolean;
   onChanged: () => void;
 }) {
+  const { t } = useI18n();
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState("");
   const [downloadError, setDownloadError] = React.useState("");
@@ -188,7 +205,7 @@ function ExamSampleSection({
       setDownloadSuccess(true);
     } catch (cause) {
       setDownloadError(
-        cause instanceof ApiError ? cause.message : "Unable to download sample"
+        cause instanceof ApiError ? cause.message : t("examDetail.downloadError")
       );
     } finally {
       setBusy(false);
@@ -200,11 +217,11 @@ function ExamSampleSection({
     event.target.value = "";
     if (!file) return;
     if (file.type !== "application/pdf") {
-      setError("Sample must be a PDF file.");
+      setError(t("examDetail.samplePdf"));
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      setError("Sample must be 10MB or less.");
+      setError(t("examDetail.sampleSize"));
       return;
     }
     setBusy(true);
@@ -220,7 +237,7 @@ function ExamSampleSection({
       });
       onChanged();
     } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : "Unable to attach sample");
+      setError(cause instanceof ApiError ? cause.message : t("examDetail.attachError"));
     } finally {
       setBusy(false);
     }
@@ -230,19 +247,19 @@ function ExamSampleSection({
     <Card>
       <CardContent className="flex flex-wrap items-center gap-3 p-4">
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium">Sample paper</p>
+          <p className="text-sm font-medium">{t("examDetail.sampleTitle")}</p>
           <p className="text-xs text-muted-foreground">
-            {sampleObjectKey ? "PDF attached to this exam." : "No sample attached yet."}
+            {sampleObjectKey ? t("examDetail.sampleAttached") : t("examDetail.sampleNone")}
           </p>
         </div>
         {sampleObjectKey ? (
           <Button type="button" variant="outline" size="sm" disabled={busy} onClick={() => void handleDownload()}>
-            {busy ? "Working…" : "Download PDF"}
+            {busy ? t("common.working") : t("examDetail.download")}
           </Button>
         ) : null}
         {canAttach && (
           <label className="inline-flex cursor-pointer items-center rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-sm hover:bg-muted">
-            {busy ? "Working…" : sampleObjectKey ? "Replace PDF" : "Attach PDF"}
+            {busy ? t("common.working") : sampleObjectKey ? t("examDetail.replacePdf") : t("examDetail.attachPdf")}
             <input type="file" accept="application/pdf" className="sr-only" disabled={busy} onChange={(event) => void handleAttach(event)} />
           </label>
         )}
@@ -253,7 +270,7 @@ function ExamSampleSection({
         )}
         {downloadSuccess && (
           <p role="status" className="w-full text-xs font-medium text-success">
-            Sample downloaded successfully
+            {t("examDetail.downloadSuccess")}
           </p>
         )}
       </CardContent>
@@ -285,6 +302,7 @@ function SubjectMarksCard({
   const [saving, setSaving] = React.useState(false);
   const [savedAt, setSavedAt] = React.useState("");
   const [savedSnapshot, setSavedSnapshot] = React.useState<string | null>(null);
+  const { t, locale } = useI18n();
   const toastManager = Toast.useToastManager();
 
   // Key order is normalized and blank/whitespace-only entries are dropped
@@ -320,11 +338,11 @@ function SubjectMarksCard({
       if (!raw) continue;
       const value = Number(raw);
       if (!Number.isFinite(value) || value < 0) {
-        setFormError(`Marks must be a number ≥ 0 for ${row.fullName}.`);
+        setFormError(t("examDetail.numericError", { name: row.fullName }));
         return;
       }
       if (value > subject.maxMarks) {
-        setFormError(`Marks cannot exceed max ${subject.maxMarks} for ${row.fullName}.`);
+        setFormError(t("examDetail.maxError", { max: subject.maxMarks, name: row.fullName }));
         return;
       }
       records.push({
@@ -334,7 +352,7 @@ function SubjectMarksCard({
       });
     }
     if (records.length === 0) {
-      setFormError("Enter marks for at least one student (leave blank to skip).");
+      setFormError(t("examDetail.enterOne"));
       return;
     }
     setSaving(true);
@@ -345,12 +363,17 @@ function SubjectMarksCard({
       setSavedAt(at);
       setSavedSnapshot(snapshotOf(marks, remarks));
       toastManager.add({
-        title: "Marks taken and submitted",
-        description: `${result.saved} record${result.saved === 1 ? "" : "s"} · ${subject.subjectName} · ${subject.className} · ${at}`,
+        title: t("examDetail.toastTitle"),
+        description: t("examDetail.toastDescription", {
+          count: result.saved,
+          subject: subject.subjectName,
+          className: subject.className,
+          at,
+        }),
       });
       onSaved();
     } catch (cause) {
-      setFormError(cause instanceof ApiError ? cause.message : "Unable to save marks");
+      setFormError(cause instanceof ApiError ? cause.message : t("examDetail.saveError"));
     } finally {
       setSaving(false);
     }
@@ -366,30 +389,30 @@ function SubjectMarksCard({
             {subject.subjectName} · {subject.className}
           </CardTitle>
           <div className="flex items-center gap-1.5">
-            <Badge variant="outline">Max {subject.maxMarks}</Badge>
-            {subject.passingMarks != null && <Badge variant="outline">Pass {subject.passingMarks}</Badge>}
+            <Badge variant="outline">{t("examDetail.max", { count: subject.maxMarks })}</Badge>
+            {subject.passingMarks != null && <Badge variant="outline">{t("examDetail.pass", { count: subject.passingMarks })}</Badge>}
             <Badge variant="secondary">
-              {entered}/{subject.total} entered
+              {t("examDetail.enteredOf", { entered, total: subject.total })}
             </Badge>
           </div>
         </div>
         {subject.examDate && (
           <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
             <CalendarDays size={14} aria-hidden />
-            Conducted {formatDate(subject.examDate)}
+            {t("exams.conducted", { date: formatDate(subject.examDate, locale) })}
           </p>
         )}
       </CardHeader>
       <CardContent className="space-y-3">
         {subject.rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No enrolled students in this class.</p>
+          <p className="text-sm text-muted-foreground">{t("common.noStudents")}</p>
         ) : (
           <div className="rounded-lg border divide-y">
             <div className="hidden grid-cols-[1fr_110px_1fr_64px] gap-2 px-3 py-1.5 text-xs font-medium text-muted-foreground sm:grid">
-              <span>Student</span>
-              <span>Marks</span>
-              <span>Remarks</span>
-              <span className="text-right">Grade</span>
+              <span>{t("examDetail.colStudent")}</span>
+              <span>{t("examDetail.colMarks")}</span>
+              <span>{t("examDetail.colRemarks")}</span>
+              <span className="text-right">{t("examDetail.colGrade")}</span>
             </div>
             {subject.rows.map((row) => (
               <div key={row.studentId} className="grid grid-cols-[1fr_64px] items-center gap-2 px-3 py-2.5 sm:grid-cols-[1fr_110px_1fr_64px] sm:py-1.5">
@@ -404,9 +427,9 @@ function SubjectMarksCard({
                     onChange={(event) =>
                       setMarks((current) => ({ ...current, [row.studentId]: event.target.value }))
                     }
-                    placeholder="Marks"
+                    placeholder={t("examDetail.marksPlaceholder")}
                     inputMode="decimal"
-                    aria-label={`${row.fullName} marks`}
+                    aria-label={t("examDetail.marksAria", { name: row.fullName })}
                     className="h-10 px-2 text-sm sm:h-9 sm:px-3"
                   />
                   <Input
@@ -414,8 +437,8 @@ function SubjectMarksCard({
                     onChange={(event) =>
                       setRemarks((current) => ({ ...current, [row.studentId]: event.target.value }))
                     }
-                    placeholder="Remark (optional)"
-                    aria-label={`${row.fullName} remarks`}
+                    placeholder={t("examDetail.remarksPlaceholder")}
+                    aria-label={t("examDetail.remarksAria", { name: row.fullName })}
                     className="h-10 px-2 text-sm sm:h-9 sm:px-3"
                   />
                   <span className="hidden text-right text-sm text-muted-foreground sm:block">{row.grade ?? "—"}</span>
@@ -432,14 +455,16 @@ function SubjectMarksCard({
         {submitted && (
           <p role="status" className="text-sm font-medium text-success">
             {savedAt !== ""
-              ? `Submitted at ${savedAt} · ${entered} record${entered === 1 ? "" : "s"} saved.`
-              : `All ${subject.total} entered.`}
+              ? entered === 1
+                ? t("examDetail.submittedFileOne", { at: savedAt })
+                : t("examDetail.submittedFileMany", { at: savedAt, count: entered })
+              : t("examDetail.allEntered", { count: subject.total })}
           </p>
         )}
         {subject.rows.length > 0 && (
           <div className="flex justify-end">
             <Button type="button" onClick={() => void handleSave()} disabled={saving || !dirty}>
-              {saving ? "Saving…" : submitted ? "Submitted ✓" : "Save marks"}
+              {saving ? t("common.saving") : submitted ? t("examDetail.saved") : t("examDetail.save")}
             </Button>
           </div>
         )}

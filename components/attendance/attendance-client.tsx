@@ -14,22 +14,22 @@ import { ApiError } from "@/lib/api/client";
 import type { TeacherAttendanceRow } from "@/lib/api/types";
 import { useRealtimeEvent } from "@/lib/realtime/socket";
 import { todayISO } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n/locale-provider";
 
-function statusBadge(row: TeacherAttendanceRow) {
-  if (!row.session) return <Badge variant="muted">Not started</Badge>;
-  if (row.session.status === "SUBMITTED") return <Badge variant="success">Submitted</Badge>;
-  return <Badge variant="warning">In progress</Badge>;
+function statusBadgeKey(row: TeacherAttendanceRow) {
+  if (!row.session) return "attendance.statusNotStarted";
+  if (row.session.status === "SUBMITTED") return "attendance.statusSubmitted";
+  return "attendance.statusInProgress";
 }
 
-function periodLabel(row: TeacherAttendanceRow): string {
-  if (row.periodNo === null || row.periodNo === undefined) return "Whole day";
-  const band =
-    row.startTime && row.endTime ? ` · ${row.startTime}–${row.endTime}` : "";
-  const subject = row.subjectName ? ` · ${row.subjectName}` : "";
-  return `Period ${row.periodNo}${band}${subject}`;
+function statusBadgeVariant(row: TeacherAttendanceRow): "success" | "warning" | "muted" {
+  if (!row.session) return "muted";
+  if (row.session.status === "SUBMITTED") return "success";
+  return "warning";
 }
 
 export function AttendanceClient() {
+  const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialClassId = searchParams.get("classId") ?? "";
@@ -52,10 +52,12 @@ export function AttendanceClient() {
         setLoading(false);
       },
       (cause: unknown) => {
-        setError(cause instanceof ApiError ? cause.message : "Unable to load sessions");
+        setError(cause instanceof ApiError ? cause.message : t("attendance.loadError"));
         setLoading(false);
       },
     );
+    // t is stable per locale; refetching on date change is intentional.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {
@@ -97,15 +99,15 @@ export function AttendanceClient() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Attendance</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t("attendance.title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Same-day editing only — past sessions lock automatically.
+          {t("attendance.subtitle")}
         </p>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1.5">
-          <label htmlFor="attendance-date" className="text-sm font-medium">Date</label>
+          <label htmlFor="attendance-date" className="text-sm font-medium">{t("attendance.dateLabel")}</label>
           <input
             id="attendance-date"
             type="date"
@@ -116,7 +118,7 @@ export function AttendanceClient() {
           />
         </div>
         <div className="space-y-1.5">
-          <label htmlFor="attendance-class" className="text-sm font-medium">Class</label>
+          <label htmlFor="attendance-class" className="text-sm font-medium">{t("attendance.classLabel")}</label>
           <select
             id="attendance-class"
             value={classFilter}
@@ -129,7 +131,7 @@ export function AttendanceClient() {
             }}
             className="flex h-9 rounded-lg border border-input bg-background px-3 py-1 text-sm shadow-sm"
           >
-            <option value="">All classes</option>
+            <option value="">{t("attendance.allClasses")}</option>
             {classOptions.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.name}
@@ -144,7 +146,7 @@ export function AttendanceClient() {
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
           <span>{error}</span>
           <Button type="button" variant="outline" size="sm" onClick={handleRetry}>
-            Retry
+            {t("common.retry")}
           </Button>
         </div>
       )}
@@ -158,9 +160,9 @@ export function AttendanceClient() {
         <Card>
           <CardContent className="p-6 text-center">
             <CalendarCheck size={20} className="mx-auto text-muted-foreground" aria-hidden />
-            <p className="mt-2 text-sm font-medium">No sessions</p>
+            <p className="mt-2 text-sm font-medium">{t("attendance.none")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              No classes scheduled for this teacher on this date.
+              {t("attendance.noneHint")}
             </p>
           </CardContent>
         </Card>
@@ -173,13 +175,20 @@ export function AttendanceClient() {
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <CardTitle className="text-sm">
-                    {row.className} · {periodLabel(row)}
+                    {row.className} ·{" "}
+                    {row.periodNo === null || row.periodNo === undefined
+                      ? t("attendance.wholeDay")
+                      : t("attendance.period", { period: row.periodNo })}
+                    {row.startTime && row.endTime ? ` · ${row.startTime}–${row.endTime}` : ""}
+                    {row.subjectName ? ` · ${row.subjectName}` : ""}
                   </CardTitle>
                   <div className="flex items-center gap-1.5">
-                    {statusBadge(row)}
+                    <Badge variant={statusBadgeVariant(row)}>
+                      {t(statusBadgeKey(row) as "attendance.statusNotStarted")}
+                    </Badge>
                     {!row.editable && (
                       <Badge variant="muted">
-                        <Lock size={12} aria-hidden /> Locked
+                        <Lock size={12} aria-hidden /> {t("common.locked")}
                       </Badge>
                     )}
                   </div>
@@ -187,7 +196,7 @@ export function AttendanceClient() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  {row.session ? `${row.session.recordCount} marked` : "No session recorded yet."}
+                  {row.session ? t("attendance.markedCount", { count: row.session.recordCount }) : t("attendance.noSessionYet")}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {row.session ? (
@@ -195,7 +204,7 @@ export function AttendanceClient() {
                       href={`/attendance/${row.session.id}`}
                       className={buttonVariants({ variant: row.editable ? "default" : "outline", size: "sm" })}
                     >
-                      {row.editable ? "Take attendance" : "View session"}
+                      {row.editable ? t("attendance.takeAttendance") : t("attendance.viewSession")}
                     </Link>
                   ) : row.editable && row.periodNo !== null && row.periodNo !== undefined ? (
                     <TakeSessionButton
@@ -207,7 +216,7 @@ export function AttendanceClient() {
                       busy={creatingId === key}
                     />
                   ) : (
-                    <span className="text-xs text-muted-foreground">No session recorded.</span>
+                    <span className="text-xs text-muted-foreground">{t("attendance.noSession")}</span>
                   )}
                 </div>
               </CardContent>
@@ -235,7 +244,11 @@ function TakeSessionButton({
   onBusyChange: (id: string) => void;
   busy: boolean;
 }) {
+  const { t } = useI18n();
   const [error, setError] = React.useState("");
+  const fallback = t("attendance.startError");
+  const startLabel = t("attendance.starting");
+  const createLabel = t("attendance.startSession");
 
   async function handleCreate() {
     onBusyChange(`${classId}:${periodNo}`);
@@ -244,7 +257,7 @@ function TakeSessionButton({
       const session = await createTeacherAttendanceSession({ classId, periodNo, date });
       onCreated(session.id);
     } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : "Unable to start session");
+      setError(cause instanceof ApiError ? cause.message : fallback);
       onBusyChange("");
     }
   }
@@ -252,7 +265,7 @@ function TakeSessionButton({
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
       <Button type="button" size="sm" onClick={() => void handleCreate()} disabled={busy}>
-        {busy ? "Starting…" : "Start session"}
+        {busy ? startLabel : createLabel}
       </Button>
       {error && (
         <span role="alert" className="text-xs text-destructive">

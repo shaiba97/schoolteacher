@@ -349,3 +349,46 @@ export type AuthMe = {
   phone?: string | null;
   avatarUrl?: string | null;
 };
+
+export type TeacherPayoutDeduction = {
+  id: string;
+  ruleId: string;
+  label: string;
+  valueType: string;
+  value: number;
+  amount: number;
+  note: string;
+};
+
+export type TeacherPayout = {
+  id: string;
+  userId: string;
+  staffName: string;
+  staffNumber: string;
+  payslipNo: string;
+  positionAssignmentId?: string | null;
+  positionTitle: string;
+  financialPeriodId?: string | null;
+  periodName: string;
+  periodStart: string;
+  periodEnd: string;
+  grossAmount: number;
+  totalDeductions: number;
+  netAmount: number;
+  currencyCode: string;
+  /** Lowercased: paid | approved | draft */
+  status: string;
+  accountId?: string | null;
+  approvedBy?: string | null;
+  paidAt?: string | null;
+  paymentMethod: string;
+  reference: string;
+  notes: string;
+  createdAt: string;
+  deductions: TeacherPayoutDeduction[];
+};
+
+export type TeacherPayroll = {
+  payouts: TeacherPayout[];
+  ytd: { year: number; paidTotal: number; pendingTotal: number; currencyCode: string };
+};

@@ -11,25 +11,29 @@ import {
   Table2,
   UserRound,
   UsersRound,
+  BanknoteIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n, type MessageKey } from "@/lib/i18n/locale-provider";
 
-const ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/classes", label: "My Classes", icon: BookOpenCheck },
-  { href: "/attendance", label: "Attendance", icon: CalendarCheck },
-  { href: "/exams", label: "Exams & Marks", icon: GraduationCap },
-  { href: "/timetable", label: "Timetable", icon: Table2 },
-  { href: "/students", label: "Students", icon: UsersRound },
-  { href: "/announcements", label: "Announcements", icon: Bell },
-  { href: "/profile", label: "Profile", icon: UserRound },
+const ITEMS: Array<{ href: string; label: MessageKey; icon: typeof LayoutDashboard }> = [
+  { href: "/dashboard", label: "nav.dashboard", icon: LayoutDashboard },
+  { href: "/classes", label: "nav.classes", icon: BookOpenCheck },
+  { href: "/attendance", label: "nav.attendance", icon: CalendarCheck },
+  { href: "/exams", label: "nav.exams", icon: GraduationCap },
+  { href: "/timetable", label: "nav.timetable", icon: Table2 },
+  { href: "/students", label: "nav.students", icon: UsersRound },
+  { href: "/payroll", label: "nav.payroll", icon: BanknoteIcon },
+  { href: "/announcements", label: "nav.announcements", icon: Bell },
+  { href: "/profile", label: "nav.profile", icon: UserRound },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { t } = useI18n();
 
   return (
-    <nav aria-label="Teacher portal" className="flex flex-col gap-1 overflow-visible p-2">
+    <nav aria-label={t("nav.label")} className="flex flex-col gap-1 overflow-visible p-2">
       {ITEMS.map((item) => {
         const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
         const Icon = item.icon;
@@ -46,7 +50,7 @@ export function Sidebar() {
             )}
           >
             <Icon size={16} aria-hidden />
-            <span className="whitespace-nowrap">{item.label}</span>
+            <span className="whitespace-nowrap">{t(item.label)}</span>
           </Link>
         );
       })}

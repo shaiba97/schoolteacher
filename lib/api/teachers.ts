@@ -14,6 +14,7 @@ import type {
   TeacherExamDetail,
   TeacherExamItem,
   TeacherNotification,
+  TeacherPayroll,
   TeacherProfile,
   TeacherStudentDetail,
   TeacherStudentItem,
@@ -180,6 +181,10 @@ export function markNotificationRead(id: string) {
 
 export function getAuthMe() {
   return teacherApiFetch<AuthMe>("/auth/me");
+}
+
+export function getMyPayroll() {
+  return teacherApiFetch<TeacherPayroll>("/teachers/me/payroll");
 }
 
 export function updateAuthMe(payload: { firstName?: string; lastName?: string; phone?: string; avatarUrl?: string }) {

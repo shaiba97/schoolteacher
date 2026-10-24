@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input, Label } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useI18n } from "@/lib/i18n/locale-provider";
 import { changeAuthPassword, getTeacherProfile, listTeacherClasses, updateAuthMe } from "@/lib/api/teachers";
 import { ApiError } from "@/lib/api/client";
 import type { TeacherClassItem, TeacherProfile } from "@/lib/api/types";
@@ -69,6 +70,7 @@ function AvatarCircle({ name, photoUrl }: { name: string; photoUrl?: string | nu
 
 export function ProfileClient() {
   const router = useRouter();
+  const { t, locale } = useI18n();
   const [profile, setProfile] = React.useState<TeacherProfile | null>(null);
   const [classes, setClasses] = React.useState<TeacherClassItem[]>([]);
   const [error, setError] = React.useState("");
@@ -81,7 +83,7 @@ export function ProfileClient() {
   const load = React.useCallback(() => {
     Promise.allSettled([getTeacherProfile(), listTeacherClasses()]).then(([profileRes, classRes]) => {
       if (profileRes.status === "rejected") {
-        setError(profileRes.reason instanceof ApiError ? profileRes.reason.message : "Unable to load profile");
+        setError(profileRes.reason instanceof ApiError ? profileRes.reason.message : t("profile.loadError"));
         setLoading(false);
         return;
       }
@@ -91,11 +93,13 @@ export function ProfileClient() {
         setClassesError("");
       } else {
         setClasses([]);
-        setClassesError(classRes.reason instanceof ApiError ? classRes.reason.message : "Unable to load assignments");
+        setClassesError(classRes.reason instanceof ApiError ? classRes.reason.message : t("profile.classesNote"));
       }
       setError("");
       setLoading(false);
     });
+    // t is stable per locale; fetching once per mount is intentional.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   React.useEffect(() => {
@@ -125,15 +129,15 @@ export function ProfileClient() {
   if (error || !profile) {
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-semibold tracking-tight">My Profile</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t("profile.title")}</h1>
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
-          <span>{error || "Profile not found"}</span>
+          <span>{error || t("profile.notFound")}</span>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" size="sm" onClick={handleRetry}>
-              Retry
+              {t("common.retry")}
             </Button>
             <Button type="button" variant="outline" size="sm" onClick={() => void handleSignOut()}>
-              Sign out
+              {t("profile.signOut")}
             </Button>
           </div>
         </div>
@@ -143,7 +147,7 @@ export function ProfileClient() {
 
   const user = profile.user;
   const displayName =
-    [user?.firstName, user?.lastName].filter(Boolean).join(" ") || profile.employeeNumber || "Unnamed teacher";
+    [user?.firstName, user?.lastName].filter(Boolean).join(" ") || profile.employeeNumber || t("profile.unnamed");
   const toTitle = (value: string) => value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
   const displayTitle = displayName
     .split(/\s+/)
@@ -162,24 +166,24 @@ export function ProfileClient() {
   return (
     <div className="space-y-4">
       {classesError && (
-        <p role="note" className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
-          Assignments could not be loaded — counts below may be incomplete.
-        </p>
+          <p role="note" className="rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
+            {t("profile.classesNote")}
+          </p>
       )}
 
       <Card>
         <CardContent className="p-6">
           <nav aria-label="Breadcrumb" className="mb-5 flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Link href="/dashboard">Dashboard</Link>
+            <Link href="/dashboard">{t("profile.breadcrumbDashboard")}</Link>
             <ChevronRight size={14} aria-hidden />
-            <span aria-current="page" className="truncate font-medium text-foreground">My Profile</span>
+            <span aria-current="page" className="truncate font-medium text-foreground">{t("profile.title")}</span>
           </nav>
           <div className="flex flex-col items-start gap-4 sm:flex-row">
             <AvatarCircle name={displayTitle} photoUrl={user?.avatarUrl} />
             <div className="min-w-0 flex-1">
               <h1 className="truncate text-xl font-semibold tracking-tight">{displayTitle}</h1>
               <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                <Badge variant="outline">{profile.department?.name ?? "Unassigned"}</Badge>
+                <Badge variant="outline">{profile.department?.name ?? t("profile.unassigned")}</Badge>
                 {user?.phone && (
                   <span className="inline-flex items-center gap-1">
                     <Phone size={12} aria-hidden />{user.phone}
@@ -189,15 +193,15 @@ export function ProfileClient() {
                 <Badge variant="secondary">{titleCase(profile.gender)}</Badge>
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Employee {profile.employeeNumber} · {profile.status}
+                {t("profile.employeeOf", { number: profile.employeeNumber, status: profile.status })}
               </p>
             </div>
             <div className="flex shrink-0 flex-wrap gap-2">
               <Button type="button" variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-                <Pencil size={14} aria-hidden /> Edit contact info
+                <Pencil size={14} aria-hidden /> {t("profile.editContact")}
               </Button>
               <Button type="button" variant="outline" size="sm" onClick={() => setPasswordOpen(true)}>
-                <KeyRound size={14} aria-hidden /> Change password
+                <KeyRound size={14} aria-hidden /> {t("profile.changePassword")}
               </Button>
             </div>
           </div>
@@ -206,35 +210,35 @@ export function ProfileClient() {
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="assignments">Teaching assignments</TabsTrigger>
-          <TabsTrigger value="attendance">Attendance</TabsTrigger>
+          <TabsTrigger value="overview">{t("profile.tabOverview")}</TabsTrigger>
+          <TabsTrigger value="assignments">{t("profile.tabAssignments")}</TabsTrigger>
+          <TabsTrigger value="attendance">{t("profile.tabAttendance")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
           <div className="grid gap-4 sm:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Personal Information</CardTitle>
+                <CardTitle className="text-sm">{t("profile.personalCard")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                <p><span className="text-muted-foreground">Full name: </span>{displayTitle}</p>
-                <p><span className="text-muted-foreground">Gender: </span>{titleCase(profile.gender)}</p>
-                <p><span className="text-muted-foreground">Date of birth: </span>{profile.dateOfBirth ? formatDate(profile.dateOfBirth) : "—"}</p>
-                <p><span className="text-muted-foreground">Phone: </span>{user?.phone ? <span className="font-mono text-xs">{user.phone}</span> : "—"}</p>
+                <p><span className="text-muted-foreground">{t("profile.fullName")}</span>{displayTitle}</p>
+                <p><span className="text-muted-foreground">{t("profile.gender")}</span>{titleCase(profile.gender)}</p>
+                <p><span className="text-muted-foreground">{t("profile.dateOfBirth")}</span>{profile.dateOfBirth ? formatDate(profile.dateOfBirth, locale) : "—"}</p>
+                <p><span className="text-muted-foreground">{t("profile.phone")}</span>{user?.phone ? <span className="font-mono text-xs">{user.phone}</span> : "—"}</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Employment Information</CardTitle>
+                <CardTitle className="text-sm">{t("profile.employmentCard")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                <p><span className="text-muted-foreground">Department: </span>{profile.department?.name ?? "—"}</p>
-                <p><span className="text-muted-foreground">Employee no.: </span><span className="font-mono text-xs">{profile.employeeNumber}</span></p>
-                <p><span className="text-muted-foreground">Status: </span>{statusBadge(profile.status)}</p>
-                <p><span className="text-muted-foreground">Hire date: </span>{profile.hireDate ? formatDate(profile.hireDate) : "—"}</p>
-                <p><span className="text-muted-foreground">Specialization: </span>{profile.specialization ?? "—"}</p>
-                <p className="text-xs text-muted-foreground">Managed by academic affairs — contact info is editable above.</p>
+                <p><span className="text-muted-foreground">{t("profile.department")}</span>{profile.department?.name ?? "—"}</p>
+                <p><span className="text-muted-foreground">{t("profile.employeeNo")}</span><span className="font-mono text-xs">{profile.employeeNumber}</span></p>
+                <p><span className="text-muted-foreground">{t("profile.status")}</span>{statusBadge(profile.status)}</p>
+                <p><span className="text-muted-foreground">{t("profile.hireDate")}</span>{profile.hireDate ? formatDate(profile.hireDate, locale) : "—"}</p>
+                <p><span className="text-muted-foreground">{t("profile.specialization")}</span>{profile.specialization ?? "—"}</p>
+                <p className="text-xs text-muted-foreground">{t("profile.employmentNote")}</p>
               </CardContent>
             </Card>
           </div>
@@ -243,18 +247,18 @@ export function ProfileClient() {
         <TabsContent value="assignments">
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">My teaching assignments</CardTitle>
+              <CardTitle className="text-sm">{t("profile.assignmentsCard")}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex flex-wrap gap-1.5">
                   <Badge variant="outline">
-                    {assignmentRows.length} subject{assignmentRows.length === 1 ? "" : "s"}
+                    {assignmentRows.length === 1 ? t("profile.subjectOne") : t("profile.subjectMany", { count: assignmentRows.length })}
                   </Badge>
-                  <Badge variant="secondary">Class teacher · {supervisedCount} class{supervisedCount === 1 ? "" : "es"}</Badge>
+                  <Badge variant="secondary">{supervisedCount === 1 ? t("profile.classTeacherOne") : t("profile.classTeacherMany", { count: supervisedCount })}</Badge>
                 </div>
                 {assignmentRows.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No teaching assignments yet.</p>
+                  <p className="text-sm text-muted-foreground">{t("profile.noAssignments")}</p>
                 ) : (
                   <div className="space-y-2">
                     {assignmentRows.map((row) => (
@@ -270,7 +274,7 @@ export function ProfileClient() {
                           href={`/classes/${row.classId}`}
                           className="shrink-0 text-xs font-medium text-primary hover:underline"
                         >
-                          Open class
+                          {t("profile.openClass")}
                         </Link>
                       </div>
                     ))}
@@ -289,11 +293,11 @@ export function ProfileClient() {
       <Card>
         <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
           <div>
-            <p className="text-sm font-medium">Sign out</p>
-            <p className="text-xs text-muted-foreground">End this session on this device.</p>
+            <p className="text-sm font-medium">{t("profile.signOutCard")}</p>
+            <p className="text-xs text-muted-foreground">{t("profile.signOutHint")}</p>
           </div>
           <Button type="button" variant="outline" size="sm" onClick={() => void handleSignOut()}>
-            <LogOut size={14} aria-hidden /> Sign out
+            <LogOut size={14} aria-hidden /> {t("profile.signOut")}
           </Button>
         </CardContent>
       </Card>
@@ -326,6 +330,7 @@ function EditContactDialog({
   onOpenChange: (open: boolean) => void;
   onSaved: () => void;
 }) {
+  const { t } = useI18n();
   const [firstName, setFirstName] = React.useState(profile.user?.firstName ?? "");
   const [lastName, setLastName] = React.useState(profile.user?.lastName ?? "");
   const [phone, setPhone] = React.useState(profile.user?.phone ?? "");
@@ -336,7 +341,7 @@ function EditContactDialog({
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!firstName.trim()) {
-      setFormError("First name cannot be blank.");
+      setFormError(t("profile.firstNameRequired"));
       return;
     }
     setPending(true);
@@ -350,7 +355,7 @@ function EditContactDialog({
       });
       onSaved();
     } catch (cause) {
-      setFormError(cause instanceof ApiError ? cause.message : "Unable to save changes");
+      setFormError(cause instanceof ApiError ? cause.message : t("profile.saveError"));
     } finally {
       setPending(false);
     }
@@ -360,25 +365,25 @@ function EditContactDialog({
     <Dialog open={open} onOpenChange={(o) => { if (!pending) onOpenChange(o); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Edit contact info</DialogTitle>
+          <DialogTitle>{t("profile.contactTitle")}</DialogTitle>
         </DialogHeader>
         <form className="space-y-4 p-6 pt-2" onSubmit={(event) => void handleSubmit(event)}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="profile-first">First name</Label>
+              <Label htmlFor="profile-first">{t("profile.firstName")}</Label>
               <Input id="profile-first" value={firstName} onChange={(event) => setFirstName(event.target.value)} required maxLength={100} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="profile-last">Last name</Label>
+              <Label htmlFor="profile-last">{t("profile.lastName")}</Label>
               <Input id="profile-last" value={lastName} onChange={(event) => setLastName(event.target.value)} maxLength={100} />
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="profile-phone">Phone</Label>
+            <Label htmlFor="profile-phone">{t("profile.phoneField")}</Label>
             <Input id="profile-phone" value={phone} onChange={(event) => setPhone(event.target.value)} maxLength={30} inputMode="tel" />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="profile-avatar">Avatar URL</Label>
+            <Label htmlFor="profile-avatar">{t("profile.avatarField")}</Label>
             <Input id="profile-avatar" value={avatarUrl} onChange={(event) => setAvatarUrl(event.target.value)} maxLength={500} inputMode="url" placeholder="https://…" />
           </div>
           {formError && (
@@ -388,10 +393,10 @@ function EditContactDialog({
           )}
           <DialogFooter className="p-0 pt-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={pending}>
-              {pending ? "Saving…" : "Save changes"}
+              {pending ? t("common.saving") : t("profile.saveChanges")}
             </Button>
           </DialogFooter>
         </form>
@@ -407,15 +412,16 @@ function PasswordDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
   const [pending, setPending] = React.useState(false);
   const [formError, setFormError] = React.useState("");
   const [done, setDone] = React.useState(false);
+  const { t } = useI18n();
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (newPassword.length < 8) {
-      setFormError("New password must be at least 8 characters.");
+      setFormError(t("profile.passwordShort"));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setFormError("New passwords do not match.");
+      setFormError(t("profile.passwordMismatch"));
       return;
     }
     setPending(true);
@@ -424,7 +430,7 @@ function PasswordDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
       await changeAuthPassword({ currentPassword, newPassword });
       setDone(true);
     } catch (cause) {
-      setFormError(cause instanceof ApiError ? cause.message : "Unable to change password");
+      setFormError(cause instanceof ApiError ? cause.message : t("profile.passwordError"));
     } finally {
       setPending(false);
     }
@@ -434,24 +440,24 @@ function PasswordDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
     <Dialog open={open} onOpenChange={(o) => { if (!pending) onOpenChange(o); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Change password</DialogTitle>
+          <DialogTitle>{t("profile.passwordTitle")}</DialogTitle>
         </DialogHeader>
         {done ? (
           <div className="space-y-4 p-6 pt-2">
             <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
               <BadgeCheck size={16} className="text-success" aria-hidden />
-              Password changed successfully.
+              {t("profile.passwordDone")}
             </p>
             <DialogFooter className="p-0">
               <Button type="button" onClick={() => onOpenChange(false)}>
-                Done
+                {t("common.close")}
               </Button>
             </DialogFooter>
           </div>
         ) : (
           <form className="space-y-4 p-6 pt-2" onSubmit={(event) => void handleSubmit(event)}>
             <div className="space-y-1.5">
-              <Label htmlFor="pw-current">Current password</Label>
+              <Label htmlFor="pw-current">{t("profile.currentPassword")}</Label>
               <Input
                 id="pw-current"
                 type="password"
@@ -462,7 +468,7 @@ function PasswordDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="pw-new">New password (min 8 characters)</Label>
+              <Label htmlFor="pw-new">{t("profile.newPassword")}</Label>
               <Input
                 id="pw-new"
                 type="password"
@@ -474,7 +480,7 @@ function PasswordDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="pw-confirm">Confirm new password</Label>
+              <Label htmlFor="pw-confirm">{t("profile.confirmPassword")}</Label>
               <Input
                 id="pw-confirm"
                 type="password"
@@ -491,10 +497,10 @@ function PasswordDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
             )}
             <DialogFooter className="p-0 pt-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button type="submit" disabled={pending}>
-                {pending ? "Saving…" : "Change password"}
+                {pending ? t("common.saving") : t("profile.changePassword")}
               </Button>
             </DialogFooter>
           </form>

@@ -12,8 +12,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { listTeacherClasses, searchTeacherStudents } from "@/lib/api/teachers";
 import { ApiError } from "@/lib/api/client";
 import type { TeacherStudentItem } from "@/lib/api/types";
+import { useI18n } from "@/lib/i18n/locale-provider";
 
 export function StudentsClient() {
+  const { t } = useI18n();
   const [search, setSearch] = React.useState("");
   const [classFilter, setClassFilter] = React.useState("");
   const [classes, setClasses] = React.useState<Array<{ id: string; name: string }>>([]);
@@ -43,7 +45,7 @@ export function StudentsClient() {
         setLoading(false);
       },
       (cause: unknown) => {
-        setError(cause instanceof ApiError ? cause.message : "Unable to search students");
+        setError(cause instanceof ApiError ? cause.message : t("students.searchError"));
         setSearching(false);
         setLoading(false);
       },
@@ -63,7 +65,7 @@ export function StudentsClient() {
         setLoading(false);
       },
       (cause: unknown) => {
-        setError(cause instanceof ApiError ? cause.message : "Unable to search students");
+        setError(cause instanceof ApiError ? cause.message : t("students.searchError"));
         setLoading(false);
       },
     );
@@ -86,34 +88,34 @@ export function StudentsClient() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Students</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t("students.title")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Search across your classes only — the full school roster stays out of reach.
+          {t("students.subtitle")}
         </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-[1fr_220px]">
         <div className="space-y-1.5">
-          <Label htmlFor="student-search">Search by name or roll number</Label>
+          <Label htmlFor="student-search">{t("students.searchLabel")}</Label>
           <div className="relative">
             <Search size={16} className="absolute left-2.5 top-2.5 text-muted-foreground" aria-hidden />
             <Input
               id="student-search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="e.g. Ayesha or 12"
+              placeholder={t("students.searchPlaceholder")}
               className="pl-8"
             />
           </div>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="student-class">Class</Label>
+          <Label htmlFor="student-class">{t("students.classLabel")}</Label>
           <Select
             id="student-class"
             value={classFilter}
             onChange={(event) => setClassFilter(event.target.value)}
           >
-            <option value="">All my classes</option>
+            <option value="">{t("students.allClasses")}</option>
             {classes.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.name}
@@ -127,7 +129,7 @@ export function StudentsClient() {
         <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
           <span>{error}</span>
           <Button type="button" variant="outline" size="sm" onClick={handleRetry}>
-            Retry
+            {t("common.retry")}
           </Button>
         </div>
       )}
@@ -142,9 +144,9 @@ export function StudentsClient() {
         <Card>
           <CardContent className="p-6 text-center">
             <UsersRound size={20} className="mx-auto text-muted-foreground" aria-hidden />
-            <p className="mt-2 text-sm font-medium">No students found</p>
+            <p className="mt-2 text-sm font-medium">{t("students.noStudents")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Try a different name, roll number, or class.
+              {t("students.noStudentsHint")}
             </p>
           </CardContent>
         </Card>
@@ -172,7 +174,7 @@ export function StudentsClient() {
       )}
       {searching && !loading && (
         <p role="status" className="text-xs text-muted-foreground">
-          Searching…
+          {t("students.searching")}
         </p>
       )}
     </div>
