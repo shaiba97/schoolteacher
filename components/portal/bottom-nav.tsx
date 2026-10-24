@@ -43,7 +43,7 @@ export function BottomNav() {
                 "flex min-w-0 flex-col items-center gap-0.5 rounded-lg px-1 py-2 text-[10px] font-medium transition-colors",
                 active
                   ? "text-white border-b-2 border-sidebar-indicator"
-                  : "text-[#FBCFE8] hover:text-white",
+                  : "text-[#DDD6FE] hover:text-white",
               )}
             >
               <Icon size={20} aria-hidden />

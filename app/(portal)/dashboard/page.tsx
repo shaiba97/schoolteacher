@@ -92,7 +92,7 @@ export default function TeacherDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <ClipboardList size={14} className="rounded-lg bg-[#FCE7F3] p-1 text-[#E11D48]" aria-hidden /> {t("dashboard.classesToday")}
+              <ClipboardList size={14} className="rounded-lg bg-secondary p-1 text-primary" aria-hidden /> {t("dashboard.classesToday")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -112,7 +112,7 @@ export default function TeacherDashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <GraduationCap size={14} className="rounded-lg bg-[#FCE7F3] p-1 text-[#E11D48]" aria-hidden /> {t("dashboard.pendingMarks")}
+              <GraduationCap size={14} className="rounded-lg bg-secondary p-1 text-primary" aria-hidden /> {t("dashboard.pendingMarks")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -183,7 +183,7 @@ export default function TeacherDashboardPage() {
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <CardTitle className="flex items-center gap-2 text-sm">
-              <Bell size={14} className="rounded-lg bg-[#FCE7F3] p-1 text-[#E11D48]" aria-hidden /> {t("dashboard.recentAnnouncements")}
+              <Bell size={14} className="rounded-lg bg-secondary p-1 text-primary" aria-hidden /> {t("dashboard.recentAnnouncements")}
             </CardTitle>
             <Link
               href="/announcements"

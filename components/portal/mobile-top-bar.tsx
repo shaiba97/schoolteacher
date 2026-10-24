@@ -57,7 +57,7 @@ export function MobileTopBar() {
   const profileActive = pathname === "/profile" || pathname.startsWith("/profile/");
 
   return (
-    <div className="fixed inset-x-0 top-0 z-40 border-b border-[#FBCFE8] bg-secondary text-foreground print:hidden md:hidden">
+    <div className="fixed inset-x-0 top-0 z-40 border-b border-[#DDD6FE] bg-secondary text-foreground print:hidden md:hidden">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4">
         <div className="-ml-2 flex items-center">
           <Link
@@ -65,8 +65,8 @@ export function MobileTopBar() {
             aria-current={studentsActive ? "page" : undefined}
             aria-label={t("nav.studentsLabel")}
             className={cn(
-              "inline-flex size-10 items-center justify-center rounded-lg text-primary hover:bg-white/60",
-              studentsActive ? "bg-white/60" : "",
+              "inline-flex size-10 items-center justify-center rounded-lg text-primary hover:bg-[#DDD6FE]",
+              studentsActive ? "bg-[#DDD6FE]" : "",
             )}
           >
             <UsersRound size={20} aria-hidden />
@@ -76,8 +76,8 @@ export function MobileTopBar() {
             aria-current={announcementsActive ? "page" : undefined}
             aria-label={showBadge ? t("nav.unread", { label: t("nav.announcements"), count: unread }) : t("nav.announcements")}
             className={cn(
-              "relative inline-flex size-10 items-center justify-center rounded-lg text-primary hover:bg-white/60",
-              announcementsActive ? "bg-white/60" : "",
+              "relative inline-flex size-10 items-center justify-center rounded-lg text-primary hover:bg-[#DDD6FE]",
+              announcementsActive ? "bg-[#DDD6FE]" : "",
             )}
           >
             <Bell size={20} aria-hidden />
@@ -90,14 +90,14 @@ export function MobileTopBar() {
           {t("portal.headerName")}
         </p>
         <div className="-mr-2 flex items-center">
-          <LanguageToggle className="border-[#FBCFE8] bg-white text-foreground hover:bg-white/60 hover:text-foreground" />
+          <LanguageToggle className="border-[#DDD6FE] bg-white text-foreground hover:bg-[#DDD6FE] hover:text-foreground" />
           <Link
             href="/profile"
             aria-current={profileActive ? "page" : undefined}
             aria-label={t("nav.profileLabel")}
             className={cn(
-              "inline-flex size-10 items-center justify-center rounded-lg text-primary hover:bg-white/60",
-              profileActive ? "bg-white/60" : "",
+              "inline-flex size-10 items-center justify-center rounded-lg text-primary hover:bg-[#DDD6FE]",
+              profileActive ? "bg-[#DDD6FE]" : "",
             )}
           >
             <UserRound size={20} aria-hidden />

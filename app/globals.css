@@ -61,48 +61,46 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Teacher portal theme: warm raspberry + amber on cream surfaces — replaces
-   the old teal + gray palette so the portal reads energetic and distinct
-   from guardian (indigo), student (cyan), financial (emerald) and
-   receptionist (blue). */
+/* Teacher portal theme: royal plum + vibrant violet + soft lilac on a soft
+   lilac canvas — replaces the previous teal + gray identity. */
 :root {
-  --background: #FFF1F2;
-  --foreground: #7F1D3D;
+  --background: #F5F3FF;
+  --foreground: #2E1065;
   --card: #FFFFFF;
-  --card-foreground: #7F1D3D;
+  --card-foreground: #2E1065;
   --popover: #FFFFFF;
-  --popover-foreground: #7F1D3D;
-  --primary: #E11D48;
-  --primary-hover: #BE185D;
+  --popover-foreground: #2E1065;
+  --primary: #7C3AED;
+  --primary-hover: #6D28D9;
   --primary-foreground: #FFFFFF;
-  --secondary: #FCE7F3;
-  --secondary-foreground: #BE185D;
-  --muted: #FCE7F3;
-  --muted-foreground: #E11D48;
+  --secondary: #EDE9FE;
+  --secondary-foreground: #4C1D95;
+  --muted: #EDE9FE;
+  --muted-foreground: #6B6480;
   --accent: #F59E0B;
   --accent-foreground: #FFFFFF;
   --destructive: #B91C1C;
   --destructive-surface: #FEE2E2;
-  --border: #FBCFE8;
-  --input: #FBCFE8;
-  --ring: #E11D48;
-  --chart-1: #E11D48;
-  --chart-2: #F59E0B;
-  --chart-3: #BE185D;
-  --chart-4: #F472B6;
-  --chart-5: #83184E;
+  --border: #E2D8F5;
+  --input: #E2D8F5;
+  --ring: #7C3AED;
+  --chart-1: #7C3AED;
+  --chart-2: #8B5CF6;
+  --chart-3: #F59E0B;
+  --chart-4: #4C1D95;
+  --chart-5: #6D28D9;
   --radius: 0.625rem;
-  --sidebar: #83184E;
-  --sidebar-foreground: #FCE7F3;
-  --sidebar-icon: #FBCFE8;
-  --sidebar-primary: #E11D48;
+  --sidebar: #4C1D95;
+  --sidebar-foreground: #EDE9FE;
+  --sidebar-icon: #C4B5FD;
+  --sidebar-primary: #6D28D9;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-hover: #9D174D;
-  --sidebar-active: #E11D48;
+  --sidebar-hover: #5B21B6;
+  --sidebar-active: #6D28D9;
   --sidebar-active-foreground: #FFFFFF;
-  --sidebar-indicator: #F472B6;
+  --sidebar-indicator: #A78BFA;
   --sidebar-border: rgba(255, 255, 255, 0.10);
-  --sidebar-ring: #E11D48;
+  --sidebar-ring: #7C3AED;
   --success: #15803D;
   --success-foreground: #15803D;
   --success-surface: #DCFCE7;
@@ -115,43 +113,43 @@
 }
 
 .dark {
-  --background: #5A0E2E;
-  --foreground: #FCE7F3;
-  --card: #4A102C;
-  --card-foreground: #FCE7F3;
-  --popover: #4A102C;
-  --popover-foreground: #FCE7F3;
-  --primary: #FB7185;
-  --primary-hover: #FCA5A5;
-  --primary-foreground: #7F1D3D;
-  --secondary: #7F1D3D;
-  --secondary-foreground: #FBCFE8;
-  --muted: #4A102C;
-  --muted-foreground: #FB7185;
+  --background: #2A104E;
+  --foreground: #EDE9FE;
+  --card: #3A1A63;
+  --card-foreground: #EDE9FE;
+  --popover: #3A1A63;
+  --popover-foreground: #EDE9FE;
+  --primary: #A78BFA;
+  --primary-hover: #C084FC;
+  --primary-foreground: #2A104E;
+  --secondary: #4C1D95;
+  --secondary-foreground: #DDD6FE;
+  --muted: #3A1A63;
+  --muted-foreground: #C4B5FD;
   --accent: #F59E0B;
   --accent-foreground: #FFFFFF;
   --destructive: #F87171;
   --destructive-surface: #450A0A;
   --border: rgba(255, 255, 255, 0.12);
   --input: rgba(255, 255, 255, 0.12);
-  --ring: #FB7185;
-  --chart-1: #FB7185;
-  --chart-2: #F59E0B;
-  --chart-3: #BE185D;
-  --chart-4: #F472B6;
-  --chart-5: #83184E;
+  --ring: #A78BFA;
+  --chart-1: #A78BFA;
+  --chart-2: #8B5CF6;
+  --chart-3: #F59E0B;
+  --chart-4: #4C1D95;
+  --chart-5: #6D28D9;
   --radius: 0.625rem;
-  --sidebar: #3B0A24;
-  --sidebar-foreground: #FBCFE8;
-  --sidebar-icon: #FB7185;
-  --sidebar-primary: #E11D48;
+  --sidebar: #1A0833;
+  --sidebar-foreground: #DDD6FE;
+  --sidebar-icon: #A78BFA;
+  --sidebar-primary: #7C3AED;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-hover: #5A0E2E;
-  --sidebar-active: #FB7185;
-  --sidebar-active-foreground: #7F1D3D;
-  --sidebar-indicator: #F472B6;
+  --sidebar-hover: #3A1A63;
+  --sidebar-active: #8B5CF6;
+  --sidebar-active-foreground: #FFFFFF;
+  --sidebar-indicator: #A78BFA;
   --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #FB7185;
+  --sidebar-ring: #A78BFA;
   --success: #4ADE80;
   --success-foreground: #4ADE80;
   --success-surface: #064E3B;
