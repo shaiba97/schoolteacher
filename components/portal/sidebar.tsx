@@ -45,11 +45,14 @@ export function Sidebar() {
             className={cn(
               "flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
               active
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                ? "bg-sidebar-active text-sidebar-active-foreground"
+                : "text-sidebar-foreground hover:bg-sidebar-hover hover:text-sidebar-foreground",
             )}
           >
-            <Icon size={16} aria-hidden />
+            {active ? (
+              <span className="w-1 shrink-0 rounded-r bg-sidebar-indicator" aria-hidden />
+            ) : null}
+            <Icon size={16} className={active ? undefined : "text-sidebar-icon"} aria-hidden />
             <span className="whitespace-nowrap">{t(item.label)}</span>
           </Link>
         );

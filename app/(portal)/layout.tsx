@@ -11,10 +11,10 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
  className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-4 p-4 pb-28 pt-[4.5rem] md:flex-row md:p-4">
       <TenantLockedNotice />
       <MobileTopBar />
-      <header className="hidden shrink-0 print:hidden md:block md:w-56">
-        <div className="flex items-center justify-between gap-2 px-3 pb-2 pt-1">
+      <header className="hidden shrink-0 print:hidden md:block md:w-56 md:rounded-2xl md:bg-sidebar md:shadow-sm">
+        <div className="flex items-center justify-between gap-2 bg-secondary px-3 pb-2 pt-3 md:rounded-t-2xl">
           <PortalName />
-          <LanguageToggle />
+          <LanguageToggle className="border-[#FBCFE8] bg-white" />
         </div>
         <Sidebar />
       </header>

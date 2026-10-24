@@ -5,10 +5,10 @@ const badgeVariants = {
   default: "bg-primary text-primary-foreground",
   secondary: "bg-secondary text-secondary-foreground",
   outline: "border bg-card",
-  success: "bg-success/10 text-success border-success/20 border",
-  warning: "bg-warning/10 text-warning border-warning/20 border",
-  info: "bg-info/10 text-info border-info/20 border",
-  destructive: "bg-destructive/10 text-destructive border-destructive/20 border",
+  success: "bg-success-surface text-success",
+  warning: "bg-warning-surface text-warning",
+  info: "bg-info-surface text-info",
+  destructive: "bg-destructive-surface text-destructive",
   muted: "bg-muted text-muted-foreground",
 };
 
