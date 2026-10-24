@@ -46,13 +46,13 @@ export function Sidebar() {
               "flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
               active
                 ? "bg-sidebar-active text-sidebar-active-foreground"
-                : "text-sidebar-foreground hover:bg-sidebar-hover hover:text-sidebar-foreground",
+                : "text-white hover:bg-sidebar-hover hover:text-white",
             )}
           >
             {active ? (
               <span className="w-1 shrink-0 rounded-r bg-sidebar-indicator" aria-hidden />
             ) : null}
-            <Icon size={16} className={active ? undefined : "text-sidebar-icon"} aria-hidden />
+            <Icon size={16} className={active ? undefined : "text-[#DDD6FE]"} aria-hidden />
             <span className="whitespace-nowrap">{t(item.label)}</span>
           </Link>
         );
