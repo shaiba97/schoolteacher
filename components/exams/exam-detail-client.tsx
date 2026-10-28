@@ -9,7 +9,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { downloadStorageFile, enterTeacherMarks, getTeacherExamDetail, updateExamSample, uploadExamSample } from "@/lib/api/teachers";
+import { downloadStorageFile, enterTeacherMarks, getTeacherExamDetail, submitTeacherSubjectMarks, updateExamSample, uploadExamSample } from "@/lib/api/teachers";
 import { ApiError } from "@/lib/api/client";
 import type { TeacherExamDetail, TeacherExamDetailSubject } from "@/lib/api/types";
 import { Toast } from "@base-ui/react/toast";
@@ -302,6 +302,7 @@ function SubjectMarksCard({
   const [saving, setSaving] = React.useState(false);
   const [savedAt, setSavedAt] = React.useState("");
   const [savedSnapshot, setSavedSnapshot] = React.useState<string | null>(null);
+  const [submittingReview, setSubmittingReview] = React.useState(false);
   const { t, locale } = useI18n();
   const toastManager = Toast.useToastManager();
 
@@ -380,6 +381,31 @@ function SubjectMarksCard({
   }
 
   const entered = subject.rows.filter((row) => (marks[row.studentId] ?? "").trim() !== "").length;
+  const allServerSubmitted =
+    subject.rows.length > 0 && subject.rows.every((row) => row.resultStatus === "SUBMITTED");
+  const reviewDone = allServerSubmitted;
+  const canSubmitReview = !dirty && allEntered && !reviewDone && !saving;
+
+  async function handleSubmitForReview() {
+    setSubmittingReview(true);
+    setFormError("");
+    try {
+      const result = await submitTeacherSubjectMarks(examId, subject.examSubjectId);
+      toastManager.add({
+        title: t("examDetail.reviewToastTitle"),
+        description: t("examDetail.reviewToastDescription", {
+          subject: subject.subjectName,
+          className: subject.className,
+          count: result.submitted,
+        }),
+      });
+      onSaved();
+    } catch (cause) {
+      setFormError(cause instanceof ApiError ? cause.message : t("examDetail.reviewError"));
+    } finally {
+      setSubmittingReview(false);
+    }
+  }
 
   return (
     <Card>
@@ -462,7 +488,18 @@ function SubjectMarksCard({
           </p>
         )}
         {subject.rows.length > 0 && (
-          <div className="flex justify-end">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {reviewDone && (
+              <Badge variant="success">{t("examDetail.reviewSent")}</Badge>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void handleSubmitForReview()}
+              disabled={!canSubmitReview || submittingReview}
+            >
+              {submittingReview ? t("common.saving") : t("examDetail.submitReview")}
+            </Button>
             <Button type="button" onClick={() => void handleSave()} disabled={saving || !dirty}>
               {saving ? t("common.saving") : submitted ? t("examDetail.saved") : t("examDetail.save")}
             </Button>

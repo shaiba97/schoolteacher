@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ExamCreateDialog, type ExamKind } from "@/components/exams/exam-create-dialog";
+import { MarksReviewClient } from "@/components/exams/marks-review-client";
 import { listTeacherExams, listTeacherPendingMarks } from "@/lib/api/teachers";
 import { ApiError } from "@/lib/api/client";
 import type { TeacherDashboard, TeacherExamItem } from "@/lib/api/types";
@@ -158,6 +159,7 @@ export function ExamsClient() {
             {t("exams.tabPending")}
             {pendingCount > 0 ? ` (${pendingCount})` : ""}
           </TabsTrigger>
+          <TabsTrigger value="review">{t("marksReview.title")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="exams">
@@ -311,6 +313,10 @@ export function ExamsClient() {
                 })}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="review">
+          <MarksReviewClient />
         </TabsContent>
       </Tabs>
     </div>

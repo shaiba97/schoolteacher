@@ -18,6 +18,7 @@ import type {
   TeacherProfile,
   TeacherStudentDetail,
   TeacherStudentItem,
+  TeacherSupervisorQueue,
   TeacherTimetableEntry,
 } from "./types";
 
@@ -91,6 +92,31 @@ export function getTeacherExamDetail(examId: string) {
 
 export function listTeacherPendingMarks() {
   return teacherApiFetch<{ exams: TeacherDashboard["pendingMarksQueue"] }>("/teachers/me/pending-marks");
+}
+
+export function submitTeacherSubjectMarks(examId: string, examSubjectId: string) {
+  return teacherApiFetch<{ submitted: number }>(
+    `/teachers/me/exams/${examId}/subjects/${examSubjectId}/submit`,
+    { method: "POST" },
+  );
+}
+
+export function listSupervisorQueue() {
+  return teacherApiFetch<TeacherSupervisorQueue>("/teachers/me/supervisor/queue");
+}
+
+export function approveClassExam(examId: string, classId: string) {
+  return teacherApiFetch<{ approved: true }>(
+    `/teachers/me/supervisor/classes/${classId}/exams/${examId}/approve`,
+    { method: "POST" },
+  );
+}
+
+export function returnSubjectMarks(examSubjectId: string, classId: string, reason: string) {
+  return teacherApiFetch<{ returned: number }>(
+    `/teachers/me/supervisor/classes/${classId}/subjects/${examSubjectId}/return`,
+    { method: "POST", body: JSON.stringify({ reason }) },
+  );
 }
 
 export function listExamTypes() {

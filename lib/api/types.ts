@@ -240,6 +240,31 @@ export type TeacherExamItem = {
   pendingSubjects: number;
 };
 
+export type TeacherSupervisorQueueSubject = {
+  examSubjectId: string;
+  subjectName: string;
+  submitted: number;
+  total: number;
+  allSubmitted: boolean;
+};
+
+export type TeacherSupervisorQueueExam = {
+  examId: string;
+  examName: string;
+  status: string;
+  examType: string | null;
+  subjects: TeacherSupervisorQueueSubject[];
+  readyToApprove: boolean;
+};
+
+export type TeacherSupervisorQueue = {
+  classes: Array<{
+    classId: string;
+    className: string;
+    exams: TeacherSupervisorQueueExam[];
+  }>;
+};
+
 export type TeacherExamDetailSubject = {
   examSubjectId: string;
   subjectName: string;
