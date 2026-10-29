@@ -21,7 +21,7 @@ type SocketState =
  * Live domain-event channel with polling fallback.
  *
  * Contract (both sides): socket payloads are invalidation signals, never row
- * contents. Every event — and every reconnect that follows a drop — triggers
+ * contents. Every event â€” and every reconnect that follows a drop â€” triggers
  * a REST refetch owned by the caller, so a missed, duplicated, or reordered
  * event can never corrupt what is on screen; at worst it causes one extra
  * fetch. REST stays the source of truth.
@@ -85,7 +85,7 @@ export function useRealtimeEvent(
         return;
       }
 
-      socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3000", {
+      socket = io(process.env.NEXT_PUBLIC_SOCKET_URL || "https://schoolbackend-7n8a.onrender.com", {
         auth: { token: data.ticket },
         withCredentials: true,
         reconnection: true,

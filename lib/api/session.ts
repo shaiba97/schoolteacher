@@ -1,4 +1,4 @@
-const API_URL = process.env.TEACHER_API_URL || "http://localhost:3000/api";
+const API_URL = process.env.TEACHER_API_URL || "https://schoolbackend-7n8a.onrender.com/api";
 
 export const TEACHER_AUTH_HEADER = "authorization";
 export const TEACHER_TENANT_HEADER = "x-tenant-id";
